@@ -1,0 +1,115 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { updateCalendarEvent } from '@/lib/calendar-sync';
+
+// PATCH /api/plan/[id] - Update a plan (user adjustments)
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await auth();
+
+    if (!session || !session.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { tasks } = body;
+
+    // Get user from database
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // Verify plan belongs to user
+    const plan = await prisma.dailyPlan.findUnique({
+      where: { id: params.id },
+      include: { tasks: true },
+    });
+
+    if (!plan || plan.userId !== user.id) {
+      return NextResponse.json(
+        { error: 'Plan not found or unauthorized' },
+        { status: 404 }
+      );
+    }
+
+    // Update tasks
+    if (tasks && Array.isArray(tasks)) {
+      for (const taskUpdate of tasks) {
+        const { id, scheduledStart, scheduledEnd, completed } = taskUpdate;
+
+        if (!id) continue;
+
+        const updateData: any = {};
+        if (scheduledStart) updateData.scheduledStart = new Date(scheduledStart);
+        if (scheduledEnd) updateData.scheduledEnd = new Date(scheduledEnd);
+        if (typeof completed === 'boolean') updateData.completed = completed;
+
+        await prisma.planTask.update({
+          where: { id },
+          data: updateData,
+        });
+
+        // Update calendar event if times changed
+        if (scheduledStart && scheduledEnd) {
+          await updateCalendarEvent(
+            user.id,
+            id,
+            new Date(scheduledStart),
+            new Date(scheduledEnd)
+          );
+        }
+      }
+    }
+
+    // Get updated plan
+    const updatedPlan = await prisma.dailyPlan.findUnique({
+      where: { id: params.id },
+      include: {
+        tasks: {
+          orderBy: {
+            scheduledStart: 'asc',
+          },
+        },
+      },
+    });
+
+    return NextResponse.json(
+      {
+        message: 'Plan updated successfully',
+        plan: {
+          id: updatedPlan!.id,
+          date: updatedPlan!.date,
+          capacityScore: updatedPlan!.capacityScore,
+          mode: updatedPlan!.mode,
+          reasoning: updatedPlan!.geminiReasoning,
+          tasks: updatedPlan!.tasks.map((t) => ({
+            id: t.id,
+            title: t.title,
+            description: t.description,
+            priority: t.priority,
+            estimatedMinutes: t.estimatedMinutes,
+            scheduledStart: t.scheduledStart,
+            scheduledEnd: t.scheduledEnd,
+            completed: t.completed,
+            goalId: t.goalId,
+          })),
+        },
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error('Plan update error:', error);
+    return NextResponse.json(
+      { error: 'Failed to update plan' },
+      { status: 500 }
+    );
+  }
+}

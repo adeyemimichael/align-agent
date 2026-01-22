@@ -1,0 +1,13 @@
+[00:00:07.897] Server  LOG     ✓ Ready in 5.4s
+[00:00:11.348] Server  LOG     ○ Compiling / ...
+[00:00:45.106] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:48.940] Server  LOG     ○ Compiling /api/auth/[...nextauth] ...
+[00:00:59.458] Browser LOG     Nightly: Overwrites EVM default provider
+[00:23:05.207] Server  LOG     ✓ Compiled in 167ms
+[00:23:13.736] Server  LOG     ✓ Compiled in 767ms
+[00:30:04.654] Server  LOG     ✓ Compiled in 1451ms
+[00:35:48.131] Server  LOG     ○ Compiling /login ...
+[00:36:10.244] Server  WARN    Error: Route "/login" used `searchParams.callbackUrl`. `searchParams` is a Promise and must be unwrapped with `await` or `React.use()` before accessing its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+[00:36:48.183] Server  WARN    Error: Route "/login" used `searchParams.callbackUrl`. `searchParams` is a Promise and must be unwrapped with `await` or `React.use()` before accessing its properties. Learn more: https://nextjs.org/docs/messages/sync-dynamic-apis
+[00:36:51.588] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:37:01.972] Browser LOG     Nightly: Overwrites EVM default provider
