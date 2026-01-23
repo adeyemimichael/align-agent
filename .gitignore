@@ -3,3 +3,13 @@ node_modules
 .env
 
 /generated/prisma
+
+# Next.js build output and cache
+.next/
+out/
+build/
+dist/
+
+# TypeScript build info
+*.tsbuildinfo
+next-env.d.ts
