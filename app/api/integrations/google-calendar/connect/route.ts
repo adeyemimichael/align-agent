@@ -37,7 +37,8 @@ export async function GET(request: NextRequest) {
     authUrl.searchParams.set('prompt', 'consent'); // Force consent to get refresh token
     authUrl.searchParams.set('state', state);
 
-    return NextResponse.json({ authUrl: authUrl.toString() }, { status: 200 });
+    // Redirect to Google OAuth page
+    return NextResponse.redirect(authUrl.toString());
   } catch (error) {
     console.error('Google Calendar connect error:', error);
     return NextResponse.json(

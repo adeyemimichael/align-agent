@@ -49,7 +49,7 @@ export class GeminiClient {
       throw new Error('GEMINI_API_KEY not configured');
     }
     this.genAI = new GoogleGenerativeAI(key);
-    this.model = this.genAI.getGenerativeModel({ model: 'gemini-pro' });
+    this.model = this.genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
   }
 
   /**

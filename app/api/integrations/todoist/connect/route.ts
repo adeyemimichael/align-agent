@@ -29,7 +29,8 @@ export async function GET(request: NextRequest) {
     authUrl.searchParams.set('scope', scope);
     authUrl.searchParams.set('state', state);
 
-    return NextResponse.json({ authUrl: authUrl.toString() }, { status: 200 });
+    // Redirect to Todoist OAuth page
+    return NextResponse.redirect(authUrl.toString());
   } catch (error) {
     console.error('Todoist connect error:', error);
     return NextResponse.json(
