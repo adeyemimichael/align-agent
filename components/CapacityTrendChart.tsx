@@ -58,15 +58,17 @@ export default function CapacityTrendChart({ data }: CapacityTrendChartProps) {
       .map((d, i) => {
         const x = padding.left + i * xStep;
         const value = getValue(d);
-        const y = padding.top + chartHeight - (value / maxValue) * chartHeight;
+        // Ensure value is a valid number, default to 0 if not
+        const safeValue = typeof value === 'number' && !isNaN(value) ? value : 0;
+        const y = padding.top + chartHeight - (safeValue / maxValue) * chartHeight;
         return `${x},${y}`;
       })
       .join(' ');
   };
 
-  const energyPoints = generatePoints((d) => d.energyLevel);
-  const sleepPoints = generatePoints((d) => d.sleepQuality);
-  const stressPoints = generatePoints((d) => d.stressLevel);
+  const energyPoints = generatePoints((d) => d.energyLevel ?? 0);
+  const sleepPoints = generatePoints((d) => d.sleepQuality ?? 0);
+  const stressPoints = generatePoints((d) => d.stressLevel ?? 0);
 
   // Format date for display
   const formatDate = (date: Date) => {
@@ -137,18 +139,19 @@ export default function CapacityTrendChart({ data }: CapacityTrendChartProps) {
           {/* Energy points */}
           {sortedData.map((d, i) => {
             const x = padding.left + i * xStep;
+            const energyValue = d.energyLevel ?? 0;
             const y =
-              padding.top + chartHeight - (d.energyLevel / maxValue) * chartHeight;
+              padding.top + chartHeight - (energyValue / maxValue) * chartHeight;
             return (
               <circle
                 key={`energy-${i}`}
                 cx={x}
-                cy={y}
+                cy={isNaN(y) ? 0 : y}
                 r="5"
                 fill="#10b981"
                 className="hover:r-7 transition-all cursor-pointer"
               >
-                <title>{`Energy: ${d.energyLevel}`}</title>
+                <title>{`Energy: ${energyValue}`}</title>
               </circle>
             );
           })}
@@ -165,18 +168,19 @@ export default function CapacityTrendChart({ data }: CapacityTrendChartProps) {
           {/* Sleep points */}
           {sortedData.map((d, i) => {
             const x = padding.left + i * xStep;
+            const sleepValue = d.sleepQuality ?? 0;
             const y =
-              padding.top + chartHeight - (d.sleepQuality / maxValue) * chartHeight;
+              padding.top + chartHeight - (sleepValue / maxValue) * chartHeight;
             return (
               <circle
                 key={`sleep-${i}`}
                 cx={x}
-                cy={y}
+                cy={isNaN(y) ? 0 : y}
                 r="5"
                 fill="#3b82f6"
                 className="hover:r-7 transition-all cursor-pointer"
               >
-                <title>{`Sleep: ${d.sleepQuality}`}</title>
+                <title>{`Sleep: ${sleepValue}`}</title>
               </circle>
             );
           })}
@@ -193,18 +197,19 @@ export default function CapacityTrendChart({ data }: CapacityTrendChartProps) {
           {/* Stress points */}
           {sortedData.map((d, i) => {
             const x = padding.left + i * xStep;
+            const stressValue = d.stressLevel ?? 0;
             const y =
-              padding.top + chartHeight - (d.stressLevel / maxValue) * chartHeight;
+              padding.top + chartHeight - (stressValue / maxValue) * chartHeight;
             return (
               <circle
                 key={`stress-${i}`}
                 cx={x}
-                cy={y}
+                cy={isNaN(y) ? 0 : y}
                 r="5"
                 fill="#ef4444"
                 className="hover:r-7 transition-all cursor-pointer"
               >
-                <title>{`Stress: ${d.stressLevel}`}</title>
+                <title>{`Stress: ${stressValue}`}</title>
               </circle>
             );
           })}
