@@ -100,7 +100,8 @@ const { handlers, signIn, signOut, auth } = (0, __TURBOPACK__imported__module__$
         strategy: "database"
     },
     pages: {
-        signIn: "/login"
+        signIn: "/login",
+        error: "/login"
     },
     callbacks: {
         async session ({ session, user }) {
@@ -109,7 +110,8 @@ const { handlers, signIn, signOut, auth } = (0, __TURBOPACK__imported__module__$
             }
             return session;
         }
-    }
+    },
+    debug: ("TURBOPACK compile-time value", "development") === "development"
 });
 __turbopack_async_result__();
 } catch(e) { __turbopack_async_result__(e); } }, false);}),
@@ -176,29 +178,30 @@ var __turbopack_async_dependencies__ = __turbopack_handle_async_dependencies__([
 const runtime = 'nodejs';
 async function LoginPage({ searchParams }) {
     const session = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$align$2f$lib$2f$auth$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["auth"])();
+    const params = await searchParams;
     // Redirect to dashboard if already authenticated
     if (session) {
-        (0, __TURBOPACK__imported__module__$5b$project$5d2f$align$2f$node_modules$2f$next$2f$dist$2f$client$2f$components$2f$navigation$2e$react$2d$server$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["redirect"])(searchParams.callbackUrl || "/dashboard");
+        (0, __TURBOPACK__imported__module__$5b$project$5d2f$align$2f$node_modules$2f$next$2f$dist$2f$client$2f$components$2f$navigation$2e$react$2d$server$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["redirect"])(params.callbackUrl || "/dashboard");
     }
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$align$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
         className: "min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-emerald-50",
         children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$align$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
             className: "w-full max-w-md",
             children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$align$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$rsc$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$align$2f$components$2f$LoginForm$2e$tsx__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["default"], {
-                callbackUrl: searchParams.callbackUrl
+                callbackUrl: params.callbackUrl
             }, void 0, false, {
                 fileName: "[project]/align/app/login/page.tsx",
-                lineNumber: 22,
+                lineNumber: 23,
                 columnNumber: 9
             }, this)
         }, void 0, false, {
             fileName: "[project]/align/app/login/page.tsx",
-            lineNumber: 21,
+            lineNumber: 22,
             columnNumber: 7
         }, this)
     }, void 0, false, {
         fileName: "[project]/align/app/login/page.tsx",
-        lineNumber: 20,
+        lineNumber: 21,
         columnNumber: 5
     }, this);
 }

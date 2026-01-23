@@ -5,17 +5,17 @@ import { z } from 'zod';
 
 // Validation schema for check-in data
 const checkInSchema = z.object({
-  energyLevel: z.number().int().min(1).max(10),
-  sleepQuality: z.number().int().min(1).max(10),
-  stressLevel: z.number().int().min(1).max(10),
+  energy: z.number().int().min(1).max(10),
+  sleep: z.number().int().min(1).max(10),
+  stress: z.number().int().min(1).max(10),
   mood: z.enum(['positive', 'neutral', 'negative']),
 });
 
 // Capacity score calculation function
 function calculateCapacityScore(
-  energyLevel: number,
-  sleepQuality: number,
-  stressLevel: number,
+  energy: number,
+  sleep: number,
+  stress: number,
   mood: string
 ): number {
   // Weights based on design document
@@ -25,9 +25,9 @@ function calculateCapacityScore(
   const moodWeight = 0.15;
 
   // Normalize inputs to 0-1 scale
-  const normalizedEnergy = (energyLevel - 1) / 9;
-  const normalizedSleep = (sleepQuality - 1) / 9;
-  const normalizedStress = (stressLevel - 1) / 9;
+  const normalizedEnergy = (energy - 1) / 9;
+  const normalizedSleep = (sleep - 1) / 9;
+  const normalizedStress = (stress - 1) / 9;
 
   // Mood modifier
   let moodModifier = 0.5; // neutral
@@ -71,10 +71,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { energyLevel, sleepQuality, stressLevel, mood } = validationResult.data;
+    const { energy, sleep, stress, mood } = validationResult.data;
 
     // Calculate capacity score and mode
-    const capacityScore = calculateCapacityScore(energyLevel, sleepQuality, stressLevel, mood);
+    const capacityScore = calculateCapacityScore(energy, sleep, stress, mood);
     const mode = selectMode(capacityScore);
 
     // Get user from database
@@ -99,9 +99,9 @@ export async function POST(request: NextRequest) {
         },
       },
       update: {
-        energyLevel,
-        sleepQuality,
-        stressLevel,
+        energy,
+        sleep,
+        stress,
         mood,
         capacityScore,
         mode,
@@ -109,9 +109,9 @@ export async function POST(request: NextRequest) {
       create: {
         userId: user.id,
         date: today,
-        energyLevel,
-        sleepQuality,
-        stressLevel,
+        energy,
+        sleep,
+        stress,
         mood,
         capacityScore,
         mode,

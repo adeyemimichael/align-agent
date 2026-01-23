@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { logAIRequest, trackReasoningQuality } from './opik';
 
 export interface PlanningContext {
   capacityScore: number;
@@ -56,16 +57,43 @@ export class GeminiClient {
    */
   async generateDailyPlan(
     context: PlanningContext,
-    startTime: Date = new Date()
+    startTime: Date = new Date(),
+    userId?: string
   ): Promise<PlanningResponse> {
     const prompt = this.buildPlanningPrompt(context, startTime);
+    const startTimestamp = Date.now();
 
     try {
       const result = await this.model.generateContent(prompt);
       const response = await result.response;
       const text = response.text();
+      const duration = Date.now() - startTimestamp;
 
-      return this.parsePlanningResponse(text, context.tasks, startTime);
+      const planningResponse = this.parsePlanningResponse(text, context.tasks, startTime);
+
+      // Track AI request in Opik (if userId provided)
+      if (userId) {
+        await logAIRequest({
+          userId,
+          capacityScore: context.capacityScore,
+          mode: context.mode,
+          taskCount: context.tasks.length,
+          prompt,
+          response: text,
+          reasoning: planningResponse.overallReasoning,
+          duration,
+          timestamp: new Date(),
+        }).catch((err) => console.error('Opik logging failed:', err));
+
+        // Track reasoning quality
+        await trackReasoningQuality({
+          userId,
+          reasoning: planningResponse.overallReasoning,
+          taskCount: context.tasks.length,
+        }).catch((err) => console.error('Opik reasoning tracking failed:', err));
+      }
+
+      return planningResponse;
     } catch (error) {
       console.error('Gemini AI error:', error);
       throw new Error(

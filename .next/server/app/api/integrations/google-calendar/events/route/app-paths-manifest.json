@@ -1,0 +1,3 @@
+{
+  "/api/integrations/google-calendar/events/route": "app/api/integrations/google-calendar/events/route.js"
+}

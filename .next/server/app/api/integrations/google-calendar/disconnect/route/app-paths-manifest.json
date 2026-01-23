@@ -1,0 +1,3 @@
+{
+  "/api/integrations/google-calendar/disconnect/route": "app/api/integrations/google-calendar/disconnect/route.js"
+}

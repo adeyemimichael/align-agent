@@ -23,6 +23,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
   pages: {
     signIn: "/login",
+    error: "/login", // Redirect errors to login page
   },
   callbacks: {
     async session({ session, user }) {
@@ -32,4 +33,5 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       return session;
     },
   },
+  debug: process.env.NODE_ENV === "development", // Enable debug logs in development
 });

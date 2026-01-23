@@ -1,0 +1,3 @@
+{
+  "/api/integrations/todoist/connect/route": "app/api/integrations/todoist/connect/route.js"
+}

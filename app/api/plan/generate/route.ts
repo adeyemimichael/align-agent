@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
 
     // Generate plan using Gemini AI
     const gemini = getGeminiClient();
-    const planningResponse = await gemini.generateDailyPlan(context, new Date());
+    const planningResponse = await gemini.generateDailyPlan(context, new Date(), user.id);
 
     // Save plan to database
     const plan = await prisma.dailyPlan.create({

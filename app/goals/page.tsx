@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import DashboardLayout from '@/components/DashboardLayout';
 import GoalForm from '@/components/GoalForm';
+import { Target, Plus, Briefcase, Heart, Star, Calendar, Edit2, Trash2, Loader2, AlertCircle } from 'lucide-react';
 
 interface Goal {
   id: string;
@@ -103,222 +105,175 @@ export default function GoalsPage() {
   const getCategoryColor = (category: string) => {
     switch (category) {
       case 'work':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'health':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 text-green-800 border-green-200';
       case 'personal':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-purple-100 text-purple-800 border-purple-200';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
       case 'work':
-        return '💼';
+        return <Briefcase className="w-5 h-5" />;
       case 'health':
-        return '💪';
+        return <Heart className="w-5 h-5" />;
       case 'personal':
-        return '🌟';
+        return <Star className="w-5 h-5" />;
       default:
-        return '📌';
+        return <Target className="w-5 h-5" />;
     }
   };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-50 flex items-center justify-center">
-        <div className="text-gray-600">Loading goals...</div>
-      </div>
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+        </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-50">
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">My Goals</h1>
-              <p className="text-gray-600">
-                Set and track your year-start goals
-              </p>
-            </div>
-            <button
-              onClick={() => router.push('/dashboard')}
-              className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              ← Back to Dashboard
-            </button>
+    <DashboardLayout>
+      <div className="max-w-5xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">My Goals</h1>
+          <p className="text-gray-600">
+            Set and track your year-start goals
+          </p>
+        </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-red-600">{error}</p>
           </div>
+        )}
 
-          {/* Error Message */}
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-600">{error}</p>
+        {/* Create Goal Button */}
+        {!showForm && !editingGoal && (
+          <button
+            onClick={() => setShowForm(true)}
+            className="w-full mb-6 py-4 px-6 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-semibold rounded-xl hover:from-emerald-700 hover:to-teal-700 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+          >
+            <Plus className="w-5 h-5" />
+            <span>Create New Goal</span>
+          </button>
+        )}
+
+        {/* Goal Form */}
+        {(showForm || editingGoal) && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">
+              {editingGoal ? 'Edit Goal' : 'Create New Goal'}
+            </h2>
+            <GoalForm
+              onSubmit={editingGoal ? handleUpdateGoal : handleCreateGoal}
+              onCancel={() => {
+                setShowForm(false);
+                setEditingGoal(null);
+              }}
+              initialData={
+                editingGoal
+                  ? {
+                      title: editingGoal.title,
+                      description: editingGoal.description || '',
+                      category: editingGoal.category,
+                      targetDate: editingGoal.targetDate
+                        ? new Date(editingGoal.targetDate)
+                            .toISOString()
+                            .split('T')[0]
+                        : '',
+                    }
+                  : undefined
+              }
+              isEditing={!!editingGoal}
+            />
+          </div>
+        )}
+
+        {/* Goals List */}
+        {goals.length === 0 ? (
+          <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border-2 border-dashed border-gray-300 p-12 text-center">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-gray-200 rounded-full mb-6">
+              <Target className="w-10 h-10 text-gray-400" />
             </div>
-          )}
-
-          {/* Create Goal Button */}
-          {!showForm && !editingGoal && (
-            <button
-              onClick={() => setShowForm(true)}
-              className="w-full mb-6 py-4 px-6 bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-700 transition-colors flex items-center justify-center space-x-2"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+            <h3 className="text-xl font-bold text-gray-900 mb-2">
+              No goals yet
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Create your first goal to start tracking your progress
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {goals.map((goal) => (
+              <div
+                key={goal.id}
+                className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md hover:border-emerald-200 transition-all"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
-              <span>Create New Goal</span>
-            </button>
-          )}
-
-          {/* Goal Form */}
-          {(showForm || editingGoal) && (
-            <div className="bg-white rounded-2xl shadow-lg p-8 mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                {editingGoal ? 'Edit Goal' : 'Create New Goal'}
-              </h2>
-              <GoalForm
-                onSubmit={editingGoal ? handleUpdateGoal : handleCreateGoal}
-                onCancel={() => {
-                  setShowForm(false);
-                  setEditingGoal(null);
-                }}
-                initialData={
-                  editingGoal
-                    ? {
-                        title: editingGoal.title,
-                        description: editingGoal.description || '',
-                        category: editingGoal.category,
-                        targetDate: editingGoal.targetDate
-                          ? new Date(editingGoal.targetDate)
-                              .toISOString()
-                              .split('T')[0]
-                          : '',
-                      }
-                    : undefined
-                }
-                isEditing={!!editingGoal}
-              />
-            </div>
-          )}
-
-          {/* Goals List */}
-          {goals.length === 0 ? (
-            <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
-              <div className="text-6xl mb-4">🎯</div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">
-                No goals yet
-              </h3>
-              <p className="text-gray-600 mb-6">
-                Create your first goal to start tracking your progress
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {goals.map((goal) => (
-                <div
-                  key={goal.id}
-                  className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <span className="text-2xl">
-                          {getCategoryIcon(goal.category)}
-                        </span>
-                        <h3 className="text-xl font-bold text-gray-900">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className={`p-2 rounded-lg ${getCategoryColor(goal.category)}`}>
+                        {getCategoryIcon(goal.category)}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-lg font-bold text-gray-900">
                           {goal.title}
                         </h3>
                         <span
-                          className={`px-3 py-1 rounded-full text-xs font-medium ${getCategoryColor(
+                          className={`inline-block mt-1 px-3 py-1 rounded-full text-xs font-semibold border ${getCategoryColor(
                             goal.category
                           )}`}
                         >
-                          {goal.category}
+                          {goal.category.toUpperCase()}
                         </span>
                       </div>
-                      {goal.description && (
-                        <p className="text-gray-600 mb-3">{goal.description}</p>
-                      )}
-                      {goal.targetDate && (
-                        <div className="flex items-center text-sm text-gray-500">
-                          <svg
-                            className="w-4 h-4 mr-1"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                            />
-                          </svg>
-                          Target: {new Date(goal.targetDate).toLocaleDateString()}
-                        </div>
-                      )}
                     </div>
-                    <div className="flex space-x-2 ml-4">
-                      <button
-                        onClick={() => setEditingGoal(goal)}
-                        className="p-2 text-gray-600 hover:text-emerald-600 transition-colors"
-                        title="Edit goal"
-                      >
-                        <svg
-                          className="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                          />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={() => handleDeleteGoal(goal.id)}
-                        className="p-2 text-gray-600 hover:text-red-600 transition-colors"
-                        title="Delete goal"
-                      >
-                        <svg
-                          className="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                          />
-                        </svg>
-                      </button>
-                    </div>
+                    {goal.description && (
+                      <p className="text-gray-600 mb-3 ml-12">{goal.description}</p>
+                    )}
+                    {goal.targetDate && (
+                      <div className="flex items-center text-sm text-gray-500 ml-12">
+                        <Calendar className="w-4 h-4 mr-2" />
+                        Target: {new Date(goal.targetDate).toLocaleDateString('en-US', {
+                          month: 'long',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-2 ml-4">
+                    <button
+                      onClick={() => setEditingGoal(goal)}
+                      className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                      title="Edit goal"
+                    >
+                      <Edit2 className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteGoal(goal.id)}
+                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Delete goal"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
-    </div>
+    </DashboardLayout>
   );
 }

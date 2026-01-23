@@ -100,7 +100,8 @@ const { handlers, signIn, signOut, auth } = (0, __TURBOPACK__imported__module__$
         strategy: "database"
     },
     pages: {
-        signIn: "/login"
+        signIn: "/login",
+        error: "/login"
     },
     callbacks: {
         async session ({ session, user }) {
@@ -109,7 +110,8 @@ const { handlers, signIn, signOut, auth } = (0, __TURBOPACK__imported__module__$
             }
             return session;
         }
-    }
+    },
+    debug: ("TURBOPACK compile-time value", "development") === "development"
 });
 __turbopack_async_result__();
 } catch(e) { __turbopack_async_result__(e); } }, false);}),

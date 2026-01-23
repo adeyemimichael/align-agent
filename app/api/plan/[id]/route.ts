@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { updateCalendarEvent } from '@/lib/calendar-sync';
+import { trackCapacityAccuracy } from '@/lib/opik';
 
 // PATCH /api/plan/[id] - Update a plan (user adjustments)
 export async function PATCH(
@@ -80,6 +81,21 @@ export async function PATCH(
         },
       },
     });
+
+    // Track capacity accuracy in Opik
+    if (updatedPlan) {
+      const completedTasks = updatedPlan.tasks.filter((t) => t.completed).length;
+      const totalTasks = updatedPlan.tasks.length;
+      const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+
+      await trackCapacityAccuracy({
+        userId: user.id,
+        predictedCapacity: updatedPlan.capacityScore,
+        actualCompletionRate: completionRate,
+        date: updatedPlan.date,
+        mode: updatedPlan.mode,
+      }).catch((err) => console.error('Opik capacity tracking failed:', err));
+    }
 
     return NextResponse.json(
       {
