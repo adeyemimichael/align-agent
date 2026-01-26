@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { updateCalendarEvent } from '@/lib/calendar-sync';
 import { trackCapacityAccuracy } from '@/lib/opik';
+import { recordTaskCompletion } from '@/lib/time-tracking';
 
 // PATCH /api/plan/[id] - Update a plan (user adjustments)
 export async function PATCH(
@@ -42,6 +43,7 @@ export async function PATCH(
     }
 
     // Update tasks
+    const timeTrackingResults = [];
     if (tasks && Array.isArray(tasks)) {
       for (const taskUpdate of tasks) {
         const { id, scheduledStart, scheduledEnd, completed } = taskUpdate;
@@ -51,7 +53,17 @@ export async function PATCH(
         const updateData: any = {};
         if (scheduledStart) updateData.scheduledStart = new Date(scheduledStart);
         if (scheduledEnd) updateData.scheduledEnd = new Date(scheduledEnd);
-        if (typeof completed === 'boolean') updateData.completed = completed;
+        if (typeof completed === 'boolean') {
+          updateData.completed = completed;
+          
+          // If marking as complete, record time tracking data
+          if (completed) {
+            const timeTrackingResult = await recordTaskCompletion(id);
+            if (timeTrackingResult.success && timeTrackingResult.timeTracking) {
+              timeTrackingResults.push(timeTrackingResult.timeTracking);
+            }
+          }
+        }
 
         await prisma.planTask.update({
           where: { id },
@@ -115,9 +127,12 @@ export async function PATCH(
             scheduledStart: t.scheduledStart,
             scheduledEnd: t.scheduledEnd,
             completed: t.completed,
+            completedAt: t.completedAt,
+            actualMinutes: t.actualMinutes,
             goalId: t.goalId,
           })),
         },
+        timeTracking: timeTrackingResults.length > 0 ? timeTrackingResults : undefined,
       },
       { status: 200 }
     );

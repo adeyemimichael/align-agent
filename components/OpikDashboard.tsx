@@ -76,17 +76,7 @@ export default function OpikDashboard() {
           <BarChart3 className="w-5 h-5 text-emerald-600" />
           AI Performance Metrics
         </h2>
-        {opikEnabled && opikUrl && (
-          <a
-            href={opikUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
-          >
-            View in Opik
-            <ExternalLink className="w-4 h-4" />
-          </a>
-        )}
+        {/* Opik cloud link hidden - using local analytics */}
       </div>
 
       {!opikEnabled && (
@@ -170,7 +160,19 @@ export default function OpikDashboard() {
       {opikEnabled && (
         <div className="mt-6 pt-4 border-t">
           <p className="text-sm text-gray-600">
-            Detailed AI decision tracking, reasoning quality metrics, and capacity accuracy analysis are being logged to Opik.
+            AI decision tracking is enabled. Detailed traces are being logged to Opik for analysis.
+          </p>
+          <p className="text-xs text-gray-500 mt-2">
+            💡 To view detailed traces in Opik Cloud, log in to{' '}
+            <a
+              href="https://www.comet.com/opik"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-emerald-600 hover:underline"
+            >
+              comet.com/opik
+            </a>
+            {' '}and navigate to your workspace.
           </p>
         </div>
       )}

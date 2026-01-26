@@ -13,6 +13,7 @@ import {
   Loader2,
   Sparkles,
   TrendingUp,
+  Trash2,
 } from 'lucide-react';
 
 interface Task {
@@ -120,6 +121,31 @@ export default function PlanPage() {
       }
     } catch (err) {
       console.error('Failed to update task:', err);
+    }
+  };
+
+  const deleteTask = async (taskId: string) => {
+    if (!plan) return;
+    if (!confirm('Are you sure you want to delete this task?')) return;
+
+    try {
+      const response = await fetch(`/api/integrations/todoist/tasks/${taskId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        // Remove task from local state
+        setPlan({
+          ...plan,
+          tasks: plan.tasks.filter(t => t.id !== taskId),
+        });
+      } else {
+        const data = await response.json();
+        alert(data.error || 'Failed to delete task');
+      }
+    } catch (err) {
+      console.error('Failed to delete task:', err);
+      alert('Failed to delete task');
     }
   };
 
@@ -334,11 +360,20 @@ export default function PlanPage() {
                               </p>
                             )}
                           </div>
-                          <span
-                            className={`px-2 py-1 rounded text-xs font-medium border ${getPriorityColor(task.priority)}`}
-                          >
-                            P{task.priority}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`px-2 py-1 rounded text-xs font-medium border ${getPriorityColor(task.priority)}`}
+                            >
+                              P{task.priority}
+                            </span>
+                            <button
+                              onClick={() => deleteTask(task.id)}
+                              className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                              title="Delete task"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
                         <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
                           {task.scheduledStart && (

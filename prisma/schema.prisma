@@ -10,19 +10,20 @@ datasource db {
 }
 
 model User {
-  id            String        @id @default(cuid())
-  email         String        @unique
-  name          String?
-  emailVerified DateTime?
-  image         String?
-  accounts      Account[]
-  sessions      Session[]
-  checkIns      CheckIn[]
-  plans         DailyPlan[]
-  goals         Goal[]
-  integrations  Integration[]
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id                       String        @id @default(cuid())
+  email                    String        @unique
+  name                     String?
+  emailVerified            DateTime?
+  image                    String?
+  accounts                 Account[]
+  sessions                 Session[]
+  checkIns                 CheckIn[]
+  plans                    DailyPlan[]
+  goals                    Goal[]
+  integrations             Integration[]
+  notificationPreferences  Json?         // Notification settings
+  createdAt                DateTime      @default(now())
+  updatedAt                DateTime      @updatedAt
 }
 
 model Account {
@@ -104,6 +105,10 @@ model PlanTask {
   scheduledStart   DateTime?
   scheduledEnd     DateTime?
   completed        Boolean   @default(false)
+  completedAt      DateTime? // When task was actually completed
+  actualStartTime  DateTime? // When user actually started the task
+  actualEndTime    DateTime? // When user actually finished the task
+  actualMinutes    Int?      // Calculated actual duration
   goalId           String?
   goal             Goal?     @relation(fields: [goalId], references: [id])
   createdAt        DateTime  @default(now())

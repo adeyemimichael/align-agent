@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { User, Bell, Shield, Palette } from 'lucide-react';
+import { User, Shield, Palette } from 'lucide-react';
+import NotificationSettings from './NotificationSettings';
 
 interface SettingsClientProps {
   user: {
@@ -12,8 +13,6 @@ interface SettingsClientProps {
 
 export default function SettingsClient({ user }: SettingsClientProps) {
   const [darkMode, setDarkMode] = useState(false);
-  const [dailyReminders, setDailyReminders] = useState(true);
-  const [taskNotifications, setTaskNotifications] = useState(true);
 
   const handleDarkModeToggle = () => {
     const newValue = !darkMode;
@@ -65,51 +64,7 @@ export default function SettingsClient({ user }: SettingsClientProps) {
       </div>
 
       {/* Notifications */}
-      <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-2 bg-blue-50 rounded-lg">
-            <Bell className="w-5 h-5 text-blue-600" />
-          </div>
-          <h2 className="text-xl font-bold text-gray-900">Notifications</h2>
-        </div>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-gray-900">Daily Check-in Reminders</p>
-              <p className="text-sm text-gray-500">Get reminded to complete your daily check-in</p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input 
-                type="checkbox" 
-                className="sr-only peer" 
-                checked={dailyReminders}
-                onChange={(e) => setDailyReminders(e.target.checked)}
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
-            </label>
-          </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-gray-900">Task Start Notifications</p>
-              <p className="text-sm text-gray-500">Get notified 5 minutes before scheduled tasks</p>
-            </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input 
-                type="checkbox" 
-                className="sr-only peer" 
-                checked={taskNotifications}
-                onChange={(e) => setTaskNotifications(e.target.checked)}
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
-            </label>
-          </div>
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-4">
-            <p className="text-sm text-blue-800">
-              💡 <strong>Note:</strong> Notification preferences are saved locally. Backend notification system coming soon!
-            </p>
-          </div>
-        </div>
-      </div>
+      <NotificationSettings />
 
       {/* Privacy & Data */}
       <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">

@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import DashboardLayout from '@/components/DashboardLayout';
 import CapacityTrendChart from '@/components/CapacityTrendChart';
 import OpikDashboard from '@/components/OpikDashboard';
+import TimeBlindnessInsights from '@/components/TimeBlindnessInsights';
 import { TrendingUp, TrendingDown, Minus, Brain, Target, Zap } from 'lucide-react';
 
 export const runtime = 'nodejs';
@@ -47,16 +48,16 @@ export default async function AnalyticsPage() {
     : 0;
 
   const avgEnergy = history.length > 0
-    ? (history.reduce((sum, h) => sum + h.energy, 0) / history.length).toFixed(1)
-    : 0;
+    ? (history.reduce((sum, h) => sum + h.energyLevel, 0) / history.length).toFixed(1)
+    : '0';
 
   const avgSleep = history.length > 0
-    ? (history.reduce((sum, h) => sum + h.sleep, 0) / history.length).toFixed(1)
-    : 0;
+    ? (history.reduce((sum, h) => sum + h.sleepQuality, 0) / history.length).toFixed(1)
+    : '0';
 
   const avgStress = history.length > 0
-    ? (history.reduce((sum, h) => sum + h.stress, 0) / history.length).toFixed(1)
-    : 0;
+    ? (history.reduce((sum, h) => sum + h.stressLevel, 0) / history.length).toFixed(1)
+    : '0';
 
   // Determine trend
   const recentHistory = history.slice(0, 7);
@@ -147,6 +148,12 @@ export default async function AnalyticsPage() {
               <CapacityTrendChart data={history.slice(0, 30)} />
             </div>
           )}
+
+          {/* Time Blindness Insights - THE KILLER FEATURE */}
+          <div className="mb-8">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">⏱️ Time Tracking & Learning</h2>
+            <TimeBlindnessInsights />
+          </div>
 
           {/* AI Performance Metrics */}
           <OpikDashboard />

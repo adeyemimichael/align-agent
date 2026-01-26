@@ -54,8 +54,7 @@ export async function logAIRequest(data: {
   if (!client) return;
 
   try {
-    await client.log({
-      projectName: 'adaptive-productivity-agent',
+    const trace = client.trace({
       name: 'gemini_plan_generation',
       input: {
         userId: data.userId,
@@ -69,12 +68,15 @@ export async function logAIRequest(data: {
         reasoning: data.reasoning,
       },
       metadata: {
-        model: 'gemini-1.5-flash',
+        model: 'gemini-2.5-flash',
         duration_ms: data.duration,
         timestamp: data.timestamp.toISOString(),
       },
       tags: ['ai-planning', 'gemini', data.mode],
     });
+
+    trace.end();
+    await client.flush();
 
     console.log('AI request logged to Opik');
   } catch (error) {
@@ -102,8 +104,7 @@ export async function trackCapacityAccuracy(data: {
     const actualCompletion = data.actualCompletionRate;
     const accuracyScore = 100 - Math.abs(expectedCompletion - actualCompletion);
 
-    await client.log({
-      projectName: 'adaptive-productivity-agent',
+    const trace = client.trace({
       name: 'capacity_accuracy',
       input: {
         userId: data.userId,
@@ -120,14 +121,10 @@ export async function trackCapacityAccuracy(data: {
         timestamp: new Date().toISOString(),
       },
       tags: ['capacity-tracking', data.mode],
-      feedbackScores: [
-        {
-          name: 'accuracy',
-          value: accuracyScore / 100,
-          reason: `Predicted ${expectedCompletion}%, actual ${actualCompletion}%`,
-        },
-      ],
     });
+
+    trace.end();
+    await client.flush();
 
     console.log('Capacity accuracy tracked in Opik');
   } catch (error) {
@@ -152,8 +149,7 @@ export async function trackReasoningQuality(data: {
   try {
     const qualityScore = calculateReasoningQuality(data.reasoning);
 
-    await client.log({
-      projectName: 'adaptive-productivity-agent',
+    const trace = client.trace({
       name: 'reasoning_quality',
       input: {
         userId: data.userId,
@@ -170,15 +166,10 @@ export async function trackReasoningQuality(data: {
         timestamp: new Date().toISOString(),
       },
       tags: ['reasoning-quality', 'gemini'],
-      feedbackScores: data.userFeedback
-        ? [
-            {
-              name: 'user_satisfaction',
-              value: data.userFeedback === 'helpful' ? 1 : 0,
-            },
-          ]
-        : undefined,
     });
+
+    trace.end();
+    await client.flush();
 
     console.log('Reasoning quality tracked in Opik');
   } catch (error) {
