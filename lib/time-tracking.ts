@@ -5,6 +5,8 @@
  */
 
 import { prisma } from './prisma';
+import { cache, CacheKeys } from './cache';
+import { getCompletedTasksWithTimeTracking } from './db-utils';
 
 export interface TimeTrackingData {
   taskId: string;
@@ -78,28 +80,8 @@ export async function getHistoricalTimeAccuracy(
   userId: string,
   limit: number = 30
 ): Promise<TimeTrackingData[]> {
-  // Get completed tasks with actual time data
-  const tasks = await prisma.planTask.findMany({
-    where: {
-      plan: {
-        userId,
-      },
-      completed: true,
-      actualMinutes: {
-        not: null,
-      },
-    },
-    orderBy: {
-      completedAt: 'desc',
-    },
-    take: limit,
-    select: {
-      id: true,
-      title: true,
-      estimatedMinutes: true,
-      actualMinutes: true,
-    },
-  });
+  // Get completed tasks with actual time data (optimized query)
+  const tasks = await getCompletedTasksWithTimeTracking(userId, limit);
 
   return tasks.map((task) => {
     const actualMinutes = task.actualMinutes || 0;
@@ -132,6 +114,13 @@ export async function getHistoricalTimeAccuracy(
 export async function getTimeBlindnessInsights(
   userId: string
 ): Promise<TimeBlindnessInsight> {
+  // Check cache first
+  const cacheKey = CacheKeys.timeBlindness(userId);
+  const cached = cache.get<TimeBlindnessInsight>(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
   const history = await getHistoricalTimeAccuracy(userId, 30);
 
   if (history.length === 0) {
@@ -180,7 +169,7 @@ export async function getTimeBlindnessInsights(
     recommendation = `Your time estimates are quite accurate! The agent will use your estimates as-is.`;
   }
 
-  return {
+  const result = {
     userId,
     averageBuffer,
     totalTasks,
@@ -190,6 +179,11 @@ export async function getTimeBlindnessInsights(
     recommendation,
     confidence,
   };
+
+  // Cache for 10 minutes
+  cache.set(cacheKey, result, 600);
+
+  return result;
 }
 
 /**

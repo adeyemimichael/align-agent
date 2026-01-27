@@ -394,6 +394,449 @@ After reviewing all testable properties, I'll consolidate redundant ones:
 *For any* user who has not completed a check-in by 9 AM, a notification should be scheduled with a message referencing their goals.
 **Validates: Requirements 14.1, 14.2**
 
+**Property 18: Time blindness buffer application**
+*For any* task with historical completion data, the adjusted time estimate should be the original estimate multiplied by the learned buffer, and the buffer should be between 0.5x and 3.0x.
+**Validates: Requirements 15.2, 15.3**
+
+**Property 19: Productivity window scheduling**
+*For any* high-priority task, it should be scheduled during hours with completion rates above 60%, unless no such hours are available.
+**Validates: Requirements 16.3**
+
+**Property 20: Skip risk calculation**
+*For any* task in a schedule where the user is more than 30 minutes behind, the skip risk should be marked as "high".
+**Validates: Requirements 17.4**
+
+**Property 21: Momentum state transitions**
+*For any* sequence of task completions, if 2 or more consecutive tasks are skipped, the momentum state should transition to "collapsed".
+**Validates: Requirements 20.5**
+
+## Real-Time Adaptive Scheduling System
+
+### Overview
+
+The real-time adaptive scheduling system is the core intelligence that makes this agent truly autonomous. Unlike traditional schedulers that create static plans, this system continuously monitors progress, predicts outcomes, and adapts the schedule throughout the day.
+
+### Architecture Components
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                   Real-Time Monitoring Layer                 │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
+│  │  Task App    │  │  Progress    │  │  Time        │     │
+│  │  Sync        │  │  Tracker     │  │  Tracker     │     │
+│  └──────────────┘  └──────────────┘  └──────────────┘     │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   Analysis & Prediction Layer                │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
+│  │  Momentum    │  │  Skip Risk   │  │  Time        │     │
+│  │  Detector    │  │  Predictor   │  │  Blindness   │     │
+│  └──────────────┘  └──────────────┘  └──────────────┘     │
+└─────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   Adaptive Decision Layer                    │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
+│  │  Gemini AI   │  │  Re-Schedule │  │  Notification│     │
+│  │  Agent       │  │  Engine      │  │  Generator   │     │
+│  └──────────────┘  └──────────────┘  └──────────────┘     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Time Blindness Compensation System
+
+**Purpose**: Learn how long tasks actually take the user and apply intelligent buffers to future estimates.
+
+**Components**:
+
+1. **Time Tracking Service** (`lib/time-tracking.ts`)
+   - Records actual start/end times for all tasks
+   - Calculates actual duration vs estimated duration
+   - Computes time blindness buffer (actual/estimated ratio)
+   - Stores historical accuracy data
+
+2. **Buffer Calculation Algorithm**:
+   ```typescript
+   interface BufferCalculation {
+     averageBuffer: number;        // Overall multiplier (e.g., 1.8 = 180% of estimate)
+     taskTypeBuffers: {            // Different buffers per task type
+       writing: number;            // e.g., 2.1x for writing tasks
+       coding: number;             // e.g., 1.4x for coding tasks
+       admin: number;              // e.g., 0.9x for admin tasks
+     };
+     timeOfDayAdjustment: {        // Afternoon tasks need more buffer
+       morning: 1.0;               // 9am-12pm: baseline
+       afternoon: 1.2;             // 1pm-5pm: +20% buffer
+     };
+     confidence: 'low' | 'medium' | 'high';  // Based on sample size
+   }
+   ```
+
+3. **Application Strategy**:
+   - New users: Use conservative 1.5x default buffer
+   - 5-15 completed tasks: Medium confidence, apply learned buffer
+   - 15+ completed tasks: High confidence, apply task-type-specific buffers
+   - Add transition time (15min) between different task types
+
+**AI Integration**:
+The Gemini AI agent receives buffer data and makes final scheduling decisions:
+```typescript
+// AI receives this context
+{
+  historicalData: {
+    averageBuffer: 1.8,
+    taskTypeBuffers: { writing: 2.1, coding: 1.4 },
+    completionRatesByHour: { 9: 0.85, 14: 0.45 }
+  }
+}
+// AI decides: "Schedule writing task at 9am with 2.1x buffer (90min instead of 45min)"
+```
+
+### Productivity Window Optimization
+
+**Purpose**: Schedule tasks during hours when the user is most likely to complete them successfully.
+
+**Components**:
+
+1. **Productivity Window Tracker** (`lib/productivity-windows.ts`)
+   - Tracks completion rate by hour of day
+   - Identifies peak windows (>70% completion rate)
+   - Identifies slump periods (<50% completion rate)
+   - Tracks patterns by task type
+
+2. **Window Data Structure**:
+   ```typescript
+   interface ProductivityWindow {
+     hour: number;                 // 0-23
+     completionRate: number;       // 0-100
+     taskCount: number;            // Sample size
+     taskTypes: {
+       creative: number;           // Completion rate for creative tasks
+       admin: number;              // Completion rate for admin tasks
+       meetings: number;           // Completion rate for meetings
+     };
+   }
+   ```
+
+3. **Scheduling Rules**:
+   - High-priority tasks → Peak windows (>70% completion rate)
+   - Medium-priority tasks → Good windows (50-70% completion rate)
+   - Low-priority tasks → Any available window
+   - Avoid scheduling demanding tasks during slump periods (e.g., 2-3pm)
+
+**AI Integration**:
+```typescript
+// AI receives productivity windows
+{
+  productivityWindows: {
+    "9": { completionRate: 0.85, taskCount: 20 },
+    "14": { completionRate: 0.45, taskCount: 12 }  // Post-lunch slump
+  }
+}
+// AI decides: "Schedule proposal at 9am (85% success rate), not at 2pm (45% success rate)"
+```
+
+### Skip Risk Prediction System
+
+**Purpose**: Predict when the user is likely to abandon tasks and intervene proactively.
+
+**Components**:
+
+1. **Skip Risk Calculator** (`lib/skip-risk.ts`)
+   - Calculates risk level: low, medium, high
+   - Considers current progress vs schedule
+   - Analyzes momentum state
+   - Tracks skip patterns
+
+2. **Risk Factors**:
+   ```typescript
+   interface SkipRiskFactors {
+     minutesBehind: number;        // How far behind schedule
+     tasksSkipped: number;         // Tasks skipped today
+     momentumState: string;        // strong, normal, weak, collapsed
+     timeOfDay: number;            // Later in day = higher risk
+     taskPriority: number;         // Lower priority = higher risk
+   }
+   ```
+
+3. **Risk Calculation**:
+   - Base risk: 20%
+   - +30% if >15 minutes behind schedule
+   - +45% if >30 minutes behind schedule
+   - +40% if 1 task already skipped (60% total)
+   - +55% if 2+ tasks skipped (75% total)
+   - +20% if afternoon and morning ran over
+
+4. **Intervention Triggers**:
+   - Medium risk (40-60%): Send supportive check-in
+   - High risk (>60%): Trigger "rescue schedule"
+   - Rescue schedule: Defer all non-urgent tasks, protect 1-2 core wins
+
+### Momentum Tracking System
+
+**Purpose**: Detect flow states and momentum collapse to capitalize on high-energy periods and intervene during crashes.
+
+**Components**:
+
+1. **Momentum State Machine**:
+   ```typescript
+   type MomentumState = 'strong' | 'normal' | 'weak' | 'collapsed';
+   
+   interface MomentumTransitions {
+     strong: {
+       trigger: 'early_completion',
+       effect: 'boost_predictions_by_15%',
+       suggestion: 'pull_forward_tasks'
+     };
+     weak: {
+       trigger: 'task_skipped',
+       effect: 'reduce_predictions_by_20%',
+       suggestion: 'simplify_remaining_tasks'
+     };
+     collapsed: {
+       trigger: '2_consecutive_skips',
+       effect: 'trigger_rescue_schedule',
+       suggestion: 'defer_all_but_one_task'
+     };
+   }
+   ```
+
+2. **Momentum Metrics**:
+   - **Morning Start Strength**: % of morning tasks that get started (baseline: 82%)
+   - **Completion-After-Early-Win Rate**: Likelihood of completing next task after early completion (baseline: 78%)
+   - **Afternoon Falloff**: % of afternoon tasks completed when morning runs over (baseline: 35%)
+
+3. **AI-Driven Momentum Responses**:
+   - **Strong momentum detected**: AI suggests pulling forward tomorrow's tasks
+   - **Weak momentum detected**: AI simplifies remaining tasks, adds breaks
+   - **Collapsed momentum**: AI triggers rescue schedule, sends encouragement
+
+### Intelligent Check-In System
+
+**Purpose**: Check in with the user throughout the day, sync with task apps, and adapt the schedule based on responses.
+
+**Components**:
+
+1. **Check-In Scheduler**:
+   - Default times: 10am, 1pm, 3:30pm (user-configurable)
+   - Triggers: Time-based, progress-based, risk-based
+   - Notification channels: Push, email, SMS
+
+2. **Check-In Message Generator**:
+   ```typescript
+   interface CheckInMessage {
+     time: string;
+     trigger: 'scheduled' | 'behind_schedule' | 'momentum_collapse';
+     message: string;
+     responseOptions: string[];
+     adaptiveActions: Record<string, ScheduleAdjustment>;
+   }
+   ```
+
+3. **Task App Sync Integration**:
+   - Before each check-in, sync with Todoist/task app
+   - Detect completions not in original plan
+   - Detect tasks marked complete but not started
+   - Reference specific task status in notification
+
+4. **Response Handling**:
+   ```typescript
+   // User responds "Still working"
+   → Extend current task time, defer next task
+   
+   // User responds "Stuck"
+   → Defer current task, suggest easier win, offer to break into smaller chunks
+   
+   // User responds "Done"
+   → Celebrate, check momentum state, continue with plan or suggest additions
+   ```
+
+5. **Notification Tone Adaptation**:
+   - **Gentle**: "Just checking in—how's it going with the proposal? No pressure, just want to help you finish strong 💙"
+   - **Direct**: "Proposal status check: Todoist shows incomplete. Done, still working, or stuck? Reply and I'll adjust."
+   - **Minimal**: "Proposal done?"
+
+### Mid-Day Re-Scheduling Engine
+
+**Purpose**: Rebuild the schedule mid-day based on actual progress, protecting core tasks while adapting to reality.
+
+**Components**:
+
+1. **Progress Analyzer**:
+   ```typescript
+   interface ProgressAnalysis {
+     minutesAhead: number;         // Positive if ahead, negative if behind
+     tasksCompleted: number;
+     tasksSkipped: number;
+     currentTask: string;
+     momentumState: MomentumState;
+     skipRisk: 'low' | 'medium' | 'high';
+   }
+   ```
+
+2. **Re-Scheduling Algorithm**:
+   ```typescript
+   function reScheduleAfternoon(analysis: ProgressAnalysis): NewSchedule {
+     // Step 1: Calculate remaining available time
+     const remainingMinutes = calculateRemainingTime(analysis);
+     
+     // Step 2: Protect high-priority and due-soon tasks
+     const protectedTasks = filterProtectedTasks(remainingTasks);
+     
+     // Step 3: Let AI re-schedule with updated context
+     const aiSchedule = await gemini.scheduleTasksWithAI({
+       currentTime: '13:00',
+       remainingMinutes,
+       protectedTasks,
+       momentumState: analysis.momentumState,
+       skipRisk: analysis.skipRisk
+     });
+     
+     return aiSchedule;
+   }
+   ```
+
+3. **Re-Scheduling Triggers**:
+   - Scheduled check-in (1pm, 3:30pm)
+   - User request ("I'm stuck, help me re-plan")
+   - High skip risk detected (>60%)
+   - Momentum collapse (2+ skipped tasks)
+   - Unplanned completions detected in task app
+
+4. **Protection Rules**:
+   - Always protect tasks due today or tomorrow
+   - Always protect P1 (highest priority) tasks
+   - Defer P3-P4 tasks first when capacity exceeded
+   - Maintain at least 1 achievable win for the day
+
+### Adaptive Notification System
+
+**Purpose**: Send notifications that adapt to the user's current state, progress, and preferences.
+
+**Components**:
+
+1. **Notification Types**:
+   - **Morning Check-In Reminder**: "Ready to make progress on [Goal]? Check in to plan your day"
+   - **Task Start Reminder**: "Proposal starts in 5 minutes. You've got this! 🎯"
+   - **Progress Check-In**: "How's the proposal going? I see it's not marked complete in Todoist yet"
+   - **Celebration**: "You crushed that admin task 10min early! 🎉 Want to jump into the proposal now?"
+   - **Supportive Intervention**: "No worries about running over—proposals are tricky! I'm giving you until 2:30pm"
+
+2. **Tone Adaptation Engine**:
+   ```typescript
+   function generateNotification(
+     type: NotificationType,
+     context: UserContext,
+     style: 'gentle' | 'direct' | 'minimal'
+   ): Notification {
+     const templates = {
+       gentle: {
+         behind_schedule: "Just checking in—how's it going? No pressure, just want to help you finish strong 💙",
+         task_start: "About to start [task]—how's your focus level? 💪"
+       },
+       direct: {
+         behind_schedule: "You're 15min behind. Should I defer [task] or extend your current work time?",
+         task_start: "[Task] starts in 5min. Ready?"
+       },
+       minimal: {
+         behind_schedule: "Behind schedule. Defer [task]? Y/N",
+         task_start: "[Task] in 5min"
+       }
+     };
+     
+     return templates[style][type];
+   }
+   ```
+
+3. **Smart Notification Timing**:
+   - Don't interrupt during first 15 minutes of a task (focus time)
+   - Batch notifications if multiple triggers occur within 10 minutes
+   - Respect "Do Not Disturb" hours (user-configurable)
+   - Increase frequency when skip risk is high
+
+### Gemini AI Agent Integration
+
+**Purpose**: Use Gemini AI as the central decision-making agent that receives all context and makes intelligent scheduling decisions.
+
+**AI Agent Prompt Structure**:
+
+```typescript
+const aiAgentPrompt = `
+You are an AI scheduling agent for an ADHD-focused productivity app.
+
+**USER CONTEXT:**
+- Capacity Score: ${capacityScore}/100
+- Mode: ${mode}
+- Current Time: ${currentTime}
+- Available Time: ${availableMinutes} minutes
+
+**HISTORICAL PATTERNS:**
+- Time Blindness Buffer: ${averageBuffer}x
+- Productivity Windows: ${productivityWindows}
+- Skip Patterns: ${skipPatterns}
+- Momentum State: ${momentumState}
+
+**CURRENT PROGRESS:**
+- Tasks Completed: ${completedTasks}
+- Tasks Skipped: ${skippedTasks}
+- Minutes Behind: ${minutesBehind}
+- Skip Risk: ${skipRisk}
+
+**TASKS TO SCHEDULE:**
+${tasks}
+
+**YOUR JOB:**
+1. Calculate intelligent available time (consider trends, day of week, capacity context)
+2. Prioritize tasks (deadline urgency, goal alignment, energy requirements, current momentum)
+3. Apply smart time blindness buffers (task type, time of day, real-time performance)
+4. Optimize time windows (schedule high-priority during peak hours)
+5. Build intelligent schedule (task flow, energy management, strategic breaks)
+6. Generate check-in notifications (supportive, references task app status)
+7. Predict schedule changes (if ahead/behind, what should adapt)
+8. Generate cohesive reasoning (explain strategy, insights, advice)
+
+**CRITICAL RULES:**
+- Always explain your reasoning
+- Use actual historical data
+- Be capacity-aware (ADHD users crash when overloaded)
+- Account for task switching costs
+- No toxic positivity
+- Teach patterns
+- Sync with task app religiously
+- Adapt, don't scold
+- Predict momentum collapse and intervene early
+
+Generate the schedule now:
+`;
+```
+
+**AI Response Format**:
+```json
+{
+  "availableTime": {
+    "availableMinutes": 340,
+    "remainingMinutes": 280,
+    "reasoning": "..."
+  },
+  "prioritizedTasks": [...],
+  "adjustedTasks": [...],
+  "timeWindowRecommendations": [...],
+  "schedule": [...],
+  "notifications": [...],
+  "scheduleAdaptation": {...},
+  "reasoning": {
+    "overallReasoning": "...",
+    "keyInsights": [...],
+    "goalAlignment": "...",
+    "advice": "...",
+    "adaptiveStrategy": "..."
+  }
+}
+```
+
 ## Error Handling
 
 ### Client-Side Error Handling

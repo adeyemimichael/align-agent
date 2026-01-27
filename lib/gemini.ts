@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { logAIRequest, trackReasoningQuality } from './opik';
+import { AIServiceError } from './errors';
 
 export interface PlanningContext {
   capacityScore: number;
@@ -46,7 +47,7 @@ export class GeminiClient {
   constructor(apiKey?: string) {
     const key = apiKey || process.env.GEMINI_API_KEY;
     if (!key) {
-      throw new Error('GEMINI_API_KEY not configured');
+      throw new AIServiceError('GEMINI_API_KEY not configured');
     }
     this.genAI = new GoogleGenerativeAI(key);
     this.model = this.genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
@@ -96,8 +97,9 @@ export class GeminiClient {
       return planningResponse;
     } catch (error) {
       console.error('Gemini AI error:', error);
-      throw new Error(
-        `Failed to generate plan: ${error instanceof Error ? error.message : 'Unknown error'}`
+      throw new AIServiceError(
+        error instanceof Error ? error.message : 'Unknown error',
+        { operation: 'generateDailyPlan', context }
       );
     }
   }
@@ -282,6 +284,222 @@ Generate the plan now:`;
       overallReasoning:
         'Using simple priority-based scheduling (AI planning temporarily unavailable)',
       modeRecommendation: undefined,
+    };
+  }
+
+  /**
+   * AI-DRIVEN SCHEDULING: Let AI make the actual scheduling decisions
+   * This is the REAL AI agent behavior
+   */
+  async scheduleTasksWithAI(context: {
+    userId: string;
+    tasks: Array<{
+      id: string;
+      title: string;
+      description?: string;
+      priority: number;
+      estimatedMinutes: number;
+      dueDate?: Date;
+      project?: string;
+    }>;
+    capacityScore: number;
+    mode: string;
+    availableMinutes: number;
+    historicalData: {
+      averageBuffer: number;
+      completionRatesByHour: Record<number, number>;
+      taskTypeBuffers: Record<string, number>;
+    };
+    goals?: Array<{ title: string; category: string }>;
+    scheduleDate: Date;
+  }): Promise<{
+    scheduledTasks: Array<{
+      taskId: string;
+      title: string;
+      scheduledStart: Date;
+      scheduledEnd: Date;
+      adjustedMinutes: number;
+      originalMinutes: number;
+      reason: string;
+    }>;
+    skippedTasks: any[];
+    reasoning: string;
+    totalScheduledMinutes: number;
+    availableMinutes: number;
+  }> {
+    const {
+      tasks,
+      capacityScore,
+      mode,
+      availableMinutes,
+      historicalData,
+      goals,
+      scheduleDate,
+    } = context;
+
+    // Format historical data for AI
+    const productivityWindows = Object.entries(historicalData.completionRatesByHour)
+      .map(([hour, rate]) => `${hour}:00 - ${Math.round(rate * 100)}% completion rate`)
+      .join('\n');
+
+    const goalsText = goals
+      ? goals.map((g) => `- ${g.title} (${g.category})`).join('\n')
+      : 'No specific goals set';
+
+    const tasksText = tasks
+      .map(
+        (t) =>
+          `{
+  "id": "${t.id}",
+  "title": "${t.title}",
+  "description": "${t.description || 'No description'}",
+  "priority": ${t.priority},
+  "estimatedMinutes": ${t.estimatedMinutes},
+  "dueDate": ${t.dueDate ? `"${t.dueDate.toISOString()}"` : 'null'}
+}`
+      )
+      .join(',\n');
+
+    const prompt = `You are a senior task manager and proficient scheduling AI. Schedule tasks for a user based on their complete context.
+
+**USER CONTEXT:**
+- Date: ${scheduleDate.toLocaleDateString()}
+- Capacity Score: ${capacityScore.toFixed(0)}/100
+- Mode: ${mode.toUpperCase()}
+- Available Time: ${Math.round(availableMinutes / 60)} hours (${availableMinutes} minutes)
+
+**HISTORICAL PATTERNS:**
+- Average Time Buffer: ${historicalData.averageBuffer.toFixed(2)}x (user typically takes ${Math.round((historicalData.averageBuffer - 1) * 100)}% longer than estimated)
+- Productivity Windows:
+${productivityWindows}
+
+**USER'S GOALS:**
+${goalsText}
+
+**TASKS TO SCHEDULE:**
+[${tasksText}]
+
+**YOUR JOB:**
+1. Decide which tasks to schedule today (don't overcommit)
+2. Adjust time estimates based on historical buffer
+3. Schedule high-priority tasks during peak productivity hours
+4. Consider task dependencies and due dates
+5. Provide clear reasoning for each decision
+
+**RULES:**
+- Total scheduled time must NOT exceed ${availableMinutes} minutes
+- High priority (1-2) tasks should get peak hours (high completion rate)
+- Apply the ${historicalData.averageBuffer.toFixed(2)}x buffer to time estimates
+- If mode is RECOVERY, schedule fewer, lighter tasks
+- If mode is DEEP_WORK, prioritize demanding tasks
+
+**OUTPUT FORMAT (JSON):**
+{
+  "scheduledTasks": [
+    {
+      "taskId": "task-id",
+      "scheduledStart": "2024-01-27T09:00:00Z",
+      "scheduledEnd": "2024-01-27T11:00:00Z",
+      "adjustedMinutes": 120,
+      "reason": "Scheduled at 9am (85% completion rate). Added 100% buffer based on history. High priority task aligned with 'Launch MVP' goal."
+    }
+  ],
+  "skippedTasks": ["task-id-2", "task-id-3"],
+  "overallReasoning": "Scheduled 5 high-priority tasks during peak hours. Skipped 3 tasks due to capacity limits. Total: 5 hours of 6 available."
+}
+
+Generate the schedule now:`;
+
+    try {
+      const result = await this.model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+
+      // Parse AI response
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('No JSON found in AI response');
+      }
+
+      const parsed = JSON.parse(jsonMatch[0]);
+
+      // Convert to our format
+      const scheduledTasks = parsed.scheduledTasks.map((t: any) => {
+        const task = tasks.find((task) => task.id === t.taskId);
+        return {
+          taskId: t.taskId,
+          title: task?.title || t.title || 'Unknown Task',
+          scheduledStart: new Date(t.scheduledStart),
+          scheduledEnd: new Date(t.scheduledEnd),
+          adjustedMinutes: t.adjustedMinutes,
+          originalMinutes: task?.estimatedMinutes || 0,
+          reason: t.reason,
+        };
+      });
+
+      const skippedTasks = parsed.skippedTasks.map((id: string) =>
+        tasks.find((t) => t.id === id)
+      ).filter(Boolean);
+
+      const totalScheduledMinutes = scheduledTasks.reduce(
+        (sum: number, t: any) => sum + t.adjustedMinutes,
+        0
+      );
+
+      return {
+        scheduledTasks,
+        skippedTasks,
+        reasoning: parsed.overallReasoning,
+        totalScheduledMinutes,
+        availableMinutes,
+      };
+    } catch (error) {
+      console.error('AI scheduling error:', error);
+      // Fallback to simple scheduling
+      return this.fallbackScheduling(tasks, availableMinutes, scheduleDate);
+    }
+  }
+
+  /**
+   * Fallback scheduling if AI fails
+   */
+  private fallbackScheduling(
+    tasks: any[],
+    availableMinutes: number,
+    scheduleDate: Date
+  ): any {
+    const sortedTasks = [...tasks].sort((a, b) => a.priority - b.priority);
+    const scheduledTasks = [];
+    let totalMinutes = 0;
+    let currentTime = new Date(scheduleDate);
+    currentTime.setHours(9, 0, 0, 0);
+
+    for (const task of sortedTasks) {
+      if (totalMinutes + task.estimatedMinutes > availableMinutes) break;
+
+      const scheduledStart = new Date(currentTime);
+      const scheduledEnd = new Date(currentTime.getTime() + task.estimatedMinutes * 60 * 1000);
+
+      scheduledTasks.push({
+        taskId: task.id,
+        title: task.title,
+        scheduledStart,
+        scheduledEnd,
+        adjustedMinutes: task.estimatedMinutes,
+        originalMinutes: task.estimatedMinutes,
+        reason: `Priority ${task.priority} task (fallback scheduling)`,
+      });
+
+      totalMinutes += task.estimatedMinutes;
+      currentTime = new Date(scheduledEnd.getTime() + 15 * 60 * 1000);
+    }
+
+    return {
+      scheduledTasks,
+      skippedTasks: sortedTasks.slice(scheduledTasks.length),
+      reasoning: 'Using fallback scheduling (AI temporarily unavailable)',
+      totalScheduledMinutes: totalMinutes,
+      availableMinutes,
     };
   }
 

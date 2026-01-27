@@ -344,12 +344,12 @@ This implementation plan breaks down the adaptive productivity agent into discre
     - Test all integrations together
     - Fix any integration issues
 
-  - [ ] 20.2 Performance optimization
+  - [x] 20.2 Performance optimization
     - Optimize database queries
     - Add caching where appropriate
     - Minimize API calls
 
-  - [ ] 20.3 Error handling improvements
+  - [x] 20.3 Error handling improvements
     - Add comprehensive error messages
     - Implement graceful degradation
     - Add user-friendly error displays
@@ -361,6 +361,283 @@ This implementation plan breaks down the adaptive productivity agent into discre
     - Test accessibility
 
 - [ ] 21. Final Checkpoint - Production Ready
+  - Ensure all tests pass, ask the user if questions arise.
+
+## Real-Time Adaptive Features
+
+- [x] 22. Skip Risk Prediction System
+  - [x] 22.1 Create skip risk calculator module
+    - Implement risk calculation algorithm
+    - Consider minutes behind, tasks skipped, momentum state
+    - Calculate risk levels: low, medium, high
+    - _Requirements: 17.1, 17.2, 17.3, 17.4_
+
+  - [x] 22.2 Integrate skip risk into scheduling
+    - Add skip risk to each scheduled task
+    - Display skip risk in UI
+    - Trigger interventions for high-risk tasks
+    - _Requirements: 17.5, 17.6, 17.7_
+
+  - [ ]* 22.3 Write property test for skip risk calculation
+    - **Property 20: Skip risk calculation**
+    - **Validates: Requirements 17.4**
+
+- [-] 23. Momentum Tracking System
+  - [x] 23.1 Implement momentum state machine
+    - Create momentum state tracker
+    - Implement state transitions (strong, normal, weak, collapsed)
+    - Track momentum metrics (morning start strength, completion-after-early-win rate)
+    - _Requirements: 20.1, 20.2, 20.3, 20.4, 20.5_
+
+  - [ ] 23.2 Integrate momentum into scheduling decisions
+    - Boost predictions when momentum is strong
+    - Trigger interventions when momentum collapses
+    - Display momentum state to user
+    - _Requirements: 20.6, 20.7, 20.8_
+
+  - [ ]* 23.3 Write property test for momentum state transitions
+    - **Property 21: Momentum state transitions**
+    - **Validates: Requirements 20.5**
+
+- [x] 24. Real-Time Progress Tracking
+  - [x] 24.1 Create progress monitoring service
+    - Track task start/end times in real-time
+    - Calculate minutes ahead/behind schedule
+    - Detect early completions and delays
+    - _Requirements: 14.1, 14.2_
+
+  - [x] 24.2 Implement task app sync for progress detection
+    - Sync with Todoist to detect completions
+    - Detect unplanned completions
+    - Update momentum state based on progress
+    - _Requirements: 14.7, 14.8_
+
+  - [x] 24.3 Build progress tracking UI
+    - Display current progress vs schedule
+    - Show momentum state indicator
+    - Show skip risk warnings
+    - _Requirements: 14.3, 14.4, 14.5, 14.6_
+
+- [x] 25. Intelligent Check-In System
+  - [x] 25.1 Create check-in scheduler
+    - Schedule check-ins at configured times (10am, 1pm, 3:30pm)
+    - Trigger check-ins based on progress (behind schedule, momentum collapse)
+    - _Requirements: 18.1_
+
+  - [x] 25.2 Implement check-in message generator
+    - Generate context-aware check-in messages
+    - Reference specific tasks and their status from task app
+    - Provide response options (Done, Still working, Stuck)
+    - Adapt tone based on user preference (gentle, direct, minimal)
+    - _Requirements: 18.3, 18.4, 18.8_
+
+  - [x] 25.3 Build check-in response handler
+    - Handle "Still working" response (extend time, defer tasks)
+    - Handle "Stuck" response (defer task, suggest easier wins)
+    - Handle "Done" response (celebrate, continue plan)
+    - _Requirements: 18.5, 18.6, 18.7_
+
+  - [x] 25.4 Integrate task app sync with check-ins
+    - Sync with Todoist before each check-in
+    - Detect completion status
+    - Reference task app status in notifications
+    - _Requirements: 18.2_
+
+- [x] 26. Mid-Day Re-Scheduling Engine
+  - [x] 26.1 Create progress analyzer
+    - Analyze current progress vs original plan
+    - Calculate minutes ahead/behind
+    - Identify protected tasks (high-priority, due soon)
+    - _Requirements: 19.1, 19.2, 19.5_
+
+  - [x] 26.2 Implement re-scheduling algorithm
+    - Rebuild afternoon schedule based on progress
+    - Protect high-priority and due-soon tasks
+    - Defer low-priority tasks when capacity exceeded
+    - _Requirements: 19.4, 19.5, 19.6_
+
+  - [x] 26.3 Integrate AI agent for re-scheduling decisions
+    - Send current progress to Gemini AI
+    - Request re-schedule with updated context
+    - Apply AI recommendations
+    - _Requirements: 19.3, 19.7_
+
+  - [x] 26.4 Build re-scheduling UI
+    - Show "ahead of schedule" suggestions
+    - Show "behind schedule" rescue plan
+    - Display re-scheduling reasoning
+    - Allow user to accept/reject re-schedule
+    - _Requirements: 19.3, 19.4, 19.8_
+
+- [ ] 27. Adaptive Notification System
+  - [ ] 27.1 Create notification generator with tone adaptation
+    - Implement gentle tone templates
+    - Implement direct tone templates
+    - Implement minimal tone templates
+    - _Requirements: 21.6, 21.7, 21.8, 21.9_
+
+  - [ ] 27.2 Implement smart notification timing
+    - Don't interrupt during first 15 minutes of task
+    - Batch notifications within 10-minute windows
+    - Respect Do Not Disturb hours
+    - _Requirements: 21.3_
+
+  - [ ] 27.3 Build notification types
+    - Morning check-in reminder with goal reference
+    - Task start reminder (5 minutes before)
+    - Celebration notification (early completion)
+    - Supportive check-in (behind schedule)
+    - _Requirements: 21.1, 21.2, 21.3, 21.4, 21.5_
+
+  - [ ] 27.4 Integrate with notification preferences
+    - Allow users to configure notification style
+    - Allow users to configure check-in times
+    - Support browser push and email notifications
+    - _Requirements: 21.10_
+
+- [ ] 28. Enhanced Gemini AI Agent Integration
+  - [ ] 28.1 Update AI prompt with full context
+    - Include time blindness buffers in prompt
+    - Include productivity windows in prompt
+    - Include skip risk and momentum state in prompt
+    - Include current progress and real-time data in prompt
+    - _Requirements: 14-21 (all adaptive features)_
+
+  - [ ] 28.2 Implement AI response parsing for adaptive features
+    - Parse skip risk predictions from AI
+    - Parse momentum state recommendations from AI
+    - Parse check-in notification suggestions from AI
+    - Parse re-scheduling decisions from AI
+    - _Requirements: 14-21 (all adaptive features)_
+
+  - [ ] 28.3 Build AI reasoning display for adaptive decisions
+    - Show why AI suggested re-schedule
+    - Show why AI predicted high skip risk
+    - Show why AI recommended momentum intervention
+    - _Requirements: 14-21 (all adaptive features)_
+
+- [ ] 29. Database Schema Updates for Adaptive Features
+  - [ ] 29.1 Add fields to PlanTask model
+    - Add actualStartTime field
+    - Add actualEndTime field
+    - Add actualMinutes field
+    - Add skipRisk field
+    - Add momentumState field
+    - _Requirements: 14, 15, 17, 20_
+
+  - [ ] 29.2 Create ScheduleAdaptation model
+    - Store schedule adaptations (re-schedules)
+    - Track trigger (check-in, behind schedule, momentum collapse)
+    - Store reasoning for adaptation
+    - _Requirements: 19.8_
+
+  - [ ] 29.3 Create CheckInNotification model
+    - Store check-in notifications sent
+    - Track user responses
+    - Store adaptive actions taken
+    - _Requirements: 18_
+
+  - [ ] 29.4 Run database migration
+    - Create migration for new fields and models
+    - Test migration on development database
+    - _Requirements: 14-21_
+
+- [ ] 30. API Routes for Adaptive Features
+  - [ ] 30.1 Create progress tracking routes
+    - POST /api/progress/update - Update task progress
+    - GET /api/progress/current - Get current progress
+    - POST /api/progress/sync - Sync with task app
+    - _Requirements: 14_
+
+  - [ ] 30.2 Create check-in routes
+    - POST /api/checkin/schedule - Schedule check-in notification
+    - POST /api/checkin/respond - Handle check-in response
+    - GET /api/checkin/pending - Get pending check-ins
+    - _Requirements: 18_
+
+  - [ ] 30.3 Create re-scheduling routes
+    - POST /api/plan/reschedule - Trigger mid-day re-schedule
+    - GET /api/plan/adaptations - Get schedule adaptation history
+    - _Requirements: 19_
+
+  - [ ] 30.4 Create momentum tracking routes
+    - GET /api/momentum/current - Get current momentum state
+    - GET /api/momentum/history - Get momentum history
+    - _Requirements: 20_
+
+- [ ] 31. Testing for Adaptive Features
+  - [ ]* 31.1 Write property test for time blindness buffers
+    - **Property 18: Time blindness buffer application**
+    - **Validates: Requirements 15.2, 15.3**
+
+  - [ ]* 31.2 Write property test for productivity window scheduling
+    - **Property 19: Productivity window scheduling**
+    - **Validates: Requirements 16.3**
+
+  - [ ]* 31.3 Write unit tests for skip risk calculator
+    - Test risk calculation with various scenarios
+    - Test intervention triggers
+    - _Requirements: 17_
+
+  - [ ]* 31.4 Write unit tests for momentum state machine
+    - Test state transitions
+    - Test momentum metrics calculation
+    - _Requirements: 20_
+
+  - [ ]* 31.5 Write integration tests for check-in system
+    - Test check-in scheduling
+    - Test response handling
+    - Test task app sync
+    - _Requirements: 18_
+
+- [ ] 32. UI Components for Adaptive Features
+  - [ ] 32.1 Create MomentumIndicator component
+    - Display current momentum state
+    - Show momentum trend
+    - Display momentum metrics
+    - _Requirements: 20.8_
+
+  - [ ] 32.2 Create SkipRiskWarning component
+    - Display skip risk for tasks
+    - Show intervention suggestions
+    - _Requirements: 17.7_
+
+  - [ ] 32.3 Create ProgressTracker component
+    - Show minutes ahead/behind schedule
+    - Display completed vs planned tasks
+    - Show real-time progress updates
+    - _Requirements: 14_
+
+  - [ ] 32.4 Create CheckInModal component
+    - Display check-in message
+    - Show response options
+    - Handle user responses
+    - _Requirements: 18_
+
+  - [ ] 32.5 Create RescheduleProposal component
+    - Display re-schedule reasoning
+    - Show before/after comparison
+    - Allow accept/reject actions
+    - _Requirements: 19_
+
+- [ ] 33. Final Integration and Testing
+  - [ ] 33.1 End-to-end testing of adaptive features
+    - Test complete adaptive flow (check-in → progress → re-schedule)
+    - Test momentum tracking across day
+    - Test skip risk interventions
+    - Test AI agent integration with all context
+
+  - [ ] 33.2 Performance optimization for real-time features
+    - Optimize progress tracking queries
+    - Add caching for productivity windows
+    - Minimize AI API calls
+
+  - [ ] 33.3 User acceptance testing
+    - Test with real users
+    - Gather feedback on adaptive features
+    - Refine notification tone and timing
+
+- [ ] 34. Final Checkpoint - Real-Time Adaptive Agent Complete
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes

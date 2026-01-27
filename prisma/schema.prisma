@@ -109,12 +109,17 @@ model PlanTask {
   actualStartTime  DateTime? // When user actually started the task
   actualEndTime    DateTime? // When user actually finished the task
   actualMinutes    Int?      // Calculated actual duration
+  skipRisk         String?   // Skip risk level: 'low', 'medium', 'high'
+  skipRiskPercentage Float?  // Skip risk percentage (0-100)
+  momentumState    String?   // Momentum state: 'strong', 'normal', 'weak', 'collapsed'
   goalId           String?
   goal             Goal?     @relation(fields: [goalId], references: [id])
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
   @@index([planId])
+  @@index([completed, completedAt]) // For time tracking queries
+  @@index([scheduledStart]) // For productivity window analysis
 }
 
 model Goal {

@@ -19,6 +19,8 @@ export interface TodoistProject {
   name: string;
 }
 
+import { ExternalAPIError } from './errors';
+
 /**
  * Todoist API client
  */
@@ -41,7 +43,12 @@ export class TodoistClient {
     });
 
     if (!response.ok) {
-      throw new Error(`Todoist API error: ${response.status} ${response.statusText}`);
+      const errorText = await response.text();
+      throw new ExternalAPIError(
+        'Todoist',
+        `Failed to fetch tasks: ${response.status} ${response.statusText}`,
+        { statusCode: response.status, errorText }
+      );
     }
 
     return response.json();
@@ -58,7 +65,12 @@ export class TodoistClient {
     });
 
     if (!response.ok) {
-      throw new Error(`Todoist API error: ${response.status} ${response.statusText}`);
+      const errorText = await response.text();
+      throw new ExternalAPIError(
+        'Todoist',
+        `Failed to fetch projects: ${response.status} ${response.statusText}`,
+        { statusCode: response.status, errorText }
+      );
     }
 
     return response.json();
@@ -76,7 +88,12 @@ export class TodoistClient {
     });
 
     if (!response.ok) {
-      throw new Error(`Todoist API error: ${response.status} ${response.statusText}`);
+      const errorText = await response.text();
+      throw new ExternalAPIError(
+        'Todoist',
+        `Failed to complete task: ${response.status} ${response.statusText}`,
+        { statusCode: response.status, errorText, taskId }
+      );
     }
   }
 
@@ -92,7 +109,12 @@ export class TodoistClient {
     });
 
     if (!response.ok) {
-      throw new Error(`Todoist API error: ${response.status} ${response.statusText}`);
+      const errorText = await response.text();
+      throw new ExternalAPIError(
+        'Todoist',
+        `Failed to reopen task: ${response.status} ${response.statusText}`,
+        { statusCode: response.status, errorText, taskId }
+      );
     }
   }
 }

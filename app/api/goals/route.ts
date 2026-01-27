@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { getUserByEmail } from '@/lib/db-utils';
+import { CacheInvalidation } from '@/lib/cache';
 import { z } from 'zod';
+import { handleAPIError } from '@/lib/api-error-handler';
+import { AuthError, NotFoundError, ValidationError, DatabaseError } from '@/lib/errors';
 
 // Validation schema for goal creation
 const createGoalSchema = z.object({
@@ -25,31 +29,33 @@ export async function GET(request: NextRequest) {
     const session = await auth();
 
     if (!session || !session.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw new AuthError('Please sign in to view goals');
     }
 
-    // Get user from database
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
+    // Get user from database (with caching)
+    const user = await getUserByEmail(session.user.email);
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      throw new NotFoundError('User');
     }
 
     // Get all goals for the user
-    const goals = await prisma.goal.findMany({
-      where: { userId: user.id },
-      orderBy: { createdAt: 'desc' },
-    });
+    let goals;
+    try {
+      goals = await prisma.goal.findMany({
+        where: { userId: user.id },
+        orderBy: { createdAt: 'desc' },
+      });
+    } catch (dbError) {
+      throw new DatabaseError('Failed to fetch goals', dbError);
+    }
 
     return NextResponse.json(goals, { status: 200 });
   } catch (error) {
-    console.error('Get goals error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return handleAPIError(error, {
+      operation: 'GET /api/goals',
+      userId: (await auth())?.user?.email,
+    });
   }
 }
 
@@ -59,7 +65,7 @@ export async function POST(request: NextRequest) {
     const session = await auth();
 
     if (!session || !session.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw new AuthError('Please sign in to create a goal');
     }
 
     const body = await request.json();
@@ -67,40 +73,42 @@ export async function POST(request: NextRequest) {
     // Validate input
     const validationResult = createGoalSchema.safeParse(body);
     if (!validationResult.success) {
-      return NextResponse.json(
-        { error: 'Invalid input', details: validationResult.error.issues },
-        { status: 400 }
-      );
+      throw new ValidationError('Invalid goal data', validationResult.error.issues);
     }
 
     const { title, description, category, targetDate } = validationResult.data;
 
-    // Get user from database
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
+    // Get user from database (with caching)
+    const user = await getUserByEmail(session.user.email);
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      throw new NotFoundError('User');
     }
 
     // Create goal
-    const goal = await prisma.goal.create({
-      data: {
-        userId: user.id,
-        title,
-        description: description || null,
-        category,
-        targetDate: targetDate ? new Date(targetDate) : null,
-      },
-    });
+    let goal;
+    try {
+      goal = await prisma.goal.create({
+        data: {
+          userId: user.id,
+          title,
+          description: description || null,
+          category,
+          targetDate: targetDate ? new Date(targetDate) : null,
+        },
+      });
+    } catch (dbError) {
+      throw new DatabaseError('Failed to create goal', dbError);
+    }
+
+    // Invalidate goals cache
+    CacheInvalidation.onGoalChange(user.id);
 
     return NextResponse.json(goal, { status: 201 });
   } catch (error) {
-    console.error('Create goal error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return handleAPIError(error, {
+      operation: 'POST /api/goals',
+      userId: (await auth())?.user?.email,
+    });
   }
 }

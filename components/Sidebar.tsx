@@ -11,7 +11,8 @@ import {
   Plug, 
   Settings,
   Sparkles,
-  LogOut
+  LogOut,
+  Activity
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 
@@ -31,6 +32,7 @@ export default function Sidebar({ user, capacityScore }: SidebarProps) {
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Daily Check-in', href: '/checkin', icon: CheckCircle2 },
     { name: "Today's Plan", href: '/plan', icon: Calendar, badge: 'AI' },
+    { name: 'Progress', href: '/progress', icon: Activity },
     { name: 'Analytics', href: '/analytics', icon: TrendingUp },
     { name: 'Goals', href: '/goals', icon: Target },
     { name: 'Integrations', href: '/integrations', icon: Plug },

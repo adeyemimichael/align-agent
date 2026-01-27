@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { getUserByEmail, getTodayCheckIn, getCheckInHistory, getUserGoals, getIntegration } from '@/lib/db-utils';
+import { CacheInvalidation } from '@/lib/cache';
 import { getGeminiClient, PlanningContext } from '@/lib/gemini';
 import { syncPlanToCalendar } from '@/lib/calendar-sync';
+import { autoScheduleTasks, TaskToSchedule } from '@/lib/auto-scheduler';
+import { handleAPIError, withGracefulDegradation } from '@/lib/api-error-handler';
+import { AuthError, NotFoundError, ValidationError, ExternalAPIError, AIServiceError } from '@/lib/errors';
 
 // POST /api/plan/generate - Generate AI-powered daily plan
 export async function POST(request: NextRequest) {
@@ -10,102 +15,73 @@ export async function POST(request: NextRequest) {
     const session = await auth();
 
     if (!session || !session.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw new AuthError('Please sign in to generate a plan');
     }
 
     const body = await request.json();
     const { date, syncToCalendar = false } = body;
 
-    // Get user from database
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
+    // Get user from database (with caching)
+    const user = await getUserByEmail(session.user.email);
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      throw new NotFoundError('User');
     }
 
-    // Get today's check-in
+    // Get today's check-in (with caching)
     const planDate = date ? new Date(date) : new Date();
     planDate.setHours(0, 0, 0, 0);
 
-    const checkIn = await prisma.checkIn.findFirst({
-      where: {
-        userId: user.id,
-        date: {
-          gte: planDate,
-          lt: new Date(planDate.getTime() + 24 * 60 * 60 * 1000),
-        },
-      },
-      orderBy: { date: 'desc' },
-    });
+    const checkIn = await getTodayCheckIn(user.id);
 
     if (!checkIn) {
-      return NextResponse.json(
-        { error: 'No check-in found for today. Please complete your check-in first.' },
-        { status: 400 }
+      throw new ValidationError(
+        'No check-in found for today. Please complete your check-in first.',
+        { requiresCheckIn: true }
       );
     }
 
-    // Get 7-day history
-    const sevenDaysAgo = new Date(planDate);
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    // Get 7-day history (with caching)
+    const history = await getCheckInHistory(user.id, 7);
 
-    const history = await prisma.checkIn.findMany({
-      where: {
-        userId: user.id,
-        date: {
-          gte: sevenDaysAgo,
-          lt: planDate,
-        },
-      },
-      orderBy: { date: 'desc' },
-      take: 7,
-    });
+    // Get user's goals (with caching)
+    const goals = await getUserGoals(user.id);
 
-    // Get user's goals
-    const goals = await prisma.goal.findMany({
-      where: { userId: user.id },
-      select: {
-        title: true,
-        category: true,
-      },
-    });
-
-    // Get tasks from Todoist integration
-    const todoistIntegration = await prisma.integration.findUnique({
-      where: {
-        userId_platform: {
-          userId: user.id,
-          platform: 'todoist',
-        },
-      },
-    });
+    // Get tasks from Todoist integration (with caching)
+    const todoistIntegration = await getIntegration(user.id, 'todoist');
 
     let tasks: PlanningContext['tasks'] = [];
 
     if (todoistIntegration) {
-      // Fetch tasks from Todoist
-      const todoistResponse = await fetch(
-        `${request.nextUrl.origin}/api/integrations/todoist/tasks`,
-        {
-          headers: {
-            Cookie: request.headers.get('cookie') || '',
-          },
-        }
-      );
+      // Fetch tasks from Todoist with graceful degradation
+      try {
+        const todoistResponse = await fetch(
+          `${request.nextUrl.origin}/api/integrations/todoist/tasks`,
+          {
+            headers: {
+              Cookie: request.headers.get('cookie') || '',
+            },
+          }
+        );
 
-      if (todoistResponse.ok) {
-        const todoistTasks = await todoistResponse.json();
-        tasks = todoistTasks.tasks.map((t: any) => ({
-          id: t.id,
-          title: t.content,
-          description: t.description,
-          priority: t.priority,
-          estimatedMinutes: t.estimatedMinutes || 45,
-          dueDate: t.due?.date ? new Date(t.due.date) : undefined,
-          project: t.project_id,
-        }));
+        if (todoistResponse.ok) {
+          const todoistTasks = await todoistResponse.json();
+          tasks = todoistTasks.tasks.map((t: any) => ({
+            id: t.id,
+            title: t.content,
+            description: t.description,
+            priority: t.priority,
+            estimatedMinutes: t.estimatedMinutes || 45,
+            dueDate: t.due?.date ? new Date(t.due.date) : undefined,
+            project: t.project_id,
+          }));
+        } else {
+          // Log but don't fail - we'll try to get tasks from existing plan
+          console.warn('Failed to fetch Todoist tasks, will use existing plan tasks');
+        }
+      } catch (todoistError) {
+        // Gracefully handle Todoist errors
+        console.warn('Todoist integration error:', todoistError);
       }
     }
 
@@ -134,52 +110,95 @@ export async function POST(request: NextRequest) {
 
     // If still no tasks, return error
     if (tasks.length === 0) {
-      return NextResponse.json(
-        {
-          error:
-            'No tasks available. Please connect Todoist or add tasks manually.',
-        },
-        { status: 400 }
+      throw new ValidationError(
+        'No tasks available. Please connect Todoist or add tasks manually.',
+        { requiresTasks: true }
       );
     }
 
-    // Build planning context
-    const context: PlanningContext = {
-      capacityScore: checkIn.capacityScore,
-      mode: checkIn.mode as 'recovery' | 'balanced' | 'deep_work',
-      tasks,
-      history: history.map((h) => ({
-        date: h.date,
-        capacityScore: h.capacityScore,
-        completedTasks: 0, // TODO: Track this
-        totalTasks: 0, // TODO: Track this
-      })),
-      goals: goals.length > 0 ? goals : undefined,
-    };
+    // Convert tasks to auto-scheduler format
+    const tasksToSchedule: TaskToSchedule[] = tasks.map((t) => ({
+      id: t.id,
+      title: t.title,
+      description: t.description,
+      priority: t.priority || 3,
+      estimatedMinutes: t.estimatedMinutes || 45,
+      dueDate: t.dueDate,
+      project: t.project,
+    }));
 
-    // Generate plan using Gemini AI
-    const gemini = getGeminiClient();
-    const planningResponse = await gemini.generateDailyPlan(context, new Date(), user.id);
+    // Use AI-driven auto-scheduler with graceful degradation
+    const autoScheduleResult = await withGracefulDegradation(
+      // Primary: AI-powered scheduling
+      async () => {
+        return await autoScheduleTasks(
+          user.id,
+          tasksToSchedule,
+          checkIn.capacityScore,
+          checkIn.mode as 'recovery' | 'balanced' | 'deep_work',
+          planDate
+        );
+      },
+      // Fallback: Simple rule-based scheduling
+      async () => {
+        console.warn('Using fallback scheduling due to AI service error');
+        // Simple fallback: sort by priority and due date
+        const sortedTasks = [...tasksToSchedule].sort((a, b) => {
+          if (a.priority !== b.priority) return a.priority - b.priority;
+          if (a.dueDate && b.dueDate) return a.dueDate.getTime() - b.dueDate.getTime();
+          if (a.dueDate) return -1;
+          if (b.dueDate) return 1;
+          return 0;
+        });
 
-    // Save plan to database
+        const scheduledTasks = sortedTasks.map((task, index) => ({
+          taskId: task.id,
+          title: task.title,
+          adjustedMinutes: task.estimatedMinutes,
+          scheduledStart: new Date(planDate.getTime() + (9 * 60 + index * 60) * 60000),
+          scheduledEnd: new Date(planDate.getTime() + (9 * 60 + (index + 1) * 60) * 60000),
+          reason: 'Fallback scheduling (AI unavailable)',
+        }));
+
+        return {
+          scheduledTasks,
+          skippedTasks: [],
+          totalScheduledMinutes: scheduledTasks.reduce((sum, t) => sum + t.adjustedMinutes, 0),
+          availableMinutes: 480,
+          reasoning: 'Using simplified scheduling. AI features will be restored shortly.',
+        };
+      },
+      {
+        operation: 'AI scheduling',
+        shouldFallback: (error) => error instanceof AIServiceError,
+      }
+    );
+
+    // AI reasoning is already included in autoScheduleResult
+    const combinedReasoning = autoScheduleResult.reasoning;
+
+    // Save plan to database using auto-scheduler results
     const plan = await prisma.dailyPlan.create({
       data: {
         userId: user.id,
         date: planDate,
         capacityScore: checkIn.capacityScore,
         mode: checkIn.mode,
-        geminiReasoning: planningResponse.overallReasoning,
+        geminiReasoning: combinedReasoning,
         tasks: {
-          create: planningResponse.orderedTasks.map((t) => {
+          create: autoScheduleResult.scheduledTasks.map((t) => {
             const task = tasks.find((task) => task.id === t.taskId);
             return {
               externalId: t.taskId,
-              title: task?.title || 'Unknown Task',
+              title: t.title,
               description: task?.description,
               priority: task?.priority || 3,
-              estimatedMinutes: task?.estimatedMinutes || 45,
+              estimatedMinutes: t.adjustedMinutes, // Use adjusted minutes with buffer
               scheduledStart: t.scheduledStart,
               scheduledEnd: t.scheduledEnd,
+              skipRisk: t.skipRisk,
+              skipRiskPercentage: t.skipRiskPercentage,
+              momentumState: t.momentumState,
             };
           }),
         },
@@ -189,23 +208,35 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Sync to Google Calendar if requested
+    // Invalidate plan cache
+    CacheInvalidation.onPlanCreate(user.id);
+
+    // Sync to Google Calendar if requested (with graceful degradation)
     let calendarSyncResult;
     if (syncToCalendar) {
-      const taskSchedules = plan.tasks.map((t) => ({
-        taskId: t.id,
-        title: t.title,
-        description: t.description || undefined,
-        startTime: t.scheduledStart!,
-        endTime: t.scheduledEnd!,
-        priority: t.priority,
-      }));
+      try {
+        const taskSchedules = plan.tasks.map((t) => ({
+          taskId: t.id,
+          title: t.title,
+          description: t.description || undefined,
+          startTime: t.scheduledStart!,
+          endTime: t.scheduledEnd!,
+          priority: t.priority,
+        }));
 
-      calendarSyncResult = await syncPlanToCalendar(
-        user.id,
-        taskSchedules,
-        Intl.DateTimeFormat().resolvedOptions().timeZone
-      );
+        calendarSyncResult = await syncPlanToCalendar(
+          user.id,
+          taskSchedules,
+          Intl.DateTimeFormat().resolvedOptions().timeZone
+        );
+      } catch (calendarError) {
+        // Log but don't fail the entire request
+        console.warn('Calendar sync failed:', calendarError);
+        calendarSyncResult = {
+          success: false,
+          message: 'Plan created successfully, but calendar sync failed. You can sync manually later.',
+        };
+      }
     }
 
     return NextResponse.json(
@@ -217,7 +248,6 @@ export async function POST(request: NextRequest) {
           capacityScore: plan.capacityScore,
           mode: plan.mode,
           reasoning: plan.geminiReasoning,
-          modeRecommendation: planningResponse.modeRecommendation,
           tasks: plan.tasks.map((t) => ({
             id: t.id,
             title: t.title,
@@ -227,20 +257,29 @@ export async function POST(request: NextRequest) {
             scheduledStart: t.scheduledStart,
             scheduledEnd: t.scheduledEnd,
             completed: t.completed,
+            skipRisk: t.skipRisk,
+            skipRiskPercentage: t.skipRiskPercentage,
+            momentumState: t.momentumState,
           })),
+          skippedTasks: autoScheduleResult.skippedTasks.length,
+          momentumMetrics: autoScheduleResult.momentumMetrics,
+          interventions: autoScheduleResult.interventions,
+          learningApplied: {
+            totalScheduledMinutes: autoScheduleResult.totalScheduledMinutes,
+            availableMinutes: autoScheduleResult.availableMinutes,
+            utilizationRate: Math.round(
+              (autoScheduleResult.totalScheduledMinutes / autoScheduleResult.availableMinutes) * 100
+            ),
+          },
         },
         calendarSync: calendarSyncResult,
       },
       { status: 201 }
     );
   } catch (error) {
-    console.error('Plan generation error:', error);
-    return NextResponse.json(
-      {
-        error: 'Failed to generate plan',
-        details: error instanceof Error ? error.message : 'Unknown error',
-      },
-      { status: 500 }
-    );
+    return handleAPIError(error, {
+      operation: 'POST /api/plan/generate',
+      userId: (await auth())?.user?.email,
+    });
   }
 }

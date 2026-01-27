@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { getUserByEmail, getTodayPlan } from '@/lib/db-utils';
 
 // GET /api/plan/current - Get today's plan
 export async function GET(request: NextRequest) {
@@ -11,41 +11,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get user from database
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
+    // Get user from database (with caching)
+    const user = await getUserByEmail(session.user.email);
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Get today's date (start of day)
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    // Get today's plan
-    const plan = await prisma.dailyPlan.findFirst({
-      where: {
-        userId: user.id,
-        date: {
-          gte: today,
-          lt: tomorrow,
-        },
-      },
-      include: {
-        tasks: {
-          orderBy: {
-            scheduledStart: 'asc',
-          },
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+    // Get today's plan (with caching)
+    const plan = await getTodayPlan(user.id);
 
     if (!plan) {
       return NextResponse.json(

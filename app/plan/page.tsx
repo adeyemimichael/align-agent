@@ -2,8 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 import DashboardLayout from '@/components/DashboardLayout';
 import AIReasoningDisplay from '@/components/AIReasoningDisplay';
+import LoadingSpinner from '@/components/LoadingSpinner';
+import { SkipRiskBadge } from '@/components/SkipRiskWarning';
 import {
   Calendar,
   Clock,
@@ -26,6 +29,9 @@ interface Task {
   scheduledEnd?: Date;
   completed: boolean;
   goalId?: string;
+  skipRisk?: 'low' | 'medium' | 'high';
+  skipRiskPercentage?: number;
+  momentumState?: string;
 }
 
 interface Plan {
@@ -181,7 +187,7 @@ export default function PlanPage() {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+          <LoadingSpinner size="lg" text="Loading your plan..." />
         </div>
       </DashboardLayout>
     );
@@ -189,7 +195,12 @@ export default function PlanPage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-5xl mx-auto">
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+        className="max-w-5xl mx-auto"
+      >
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <h1 className="text-3xl font-bold text-gray-900">
@@ -223,7 +234,12 @@ export default function PlanPage() {
         )}
 
         {!plan && !error && (
-          <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl border-2 border-emerald-200 p-12 text-center">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4 }}
+            className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl border-2 border-emerald-200 p-12 text-center"
+          >
             <div className="inline-flex items-center justify-center w-20 h-20 bg-emerald-100 rounded-full mb-6">
               <Sparkles className="w-10 h-10 text-emerald-600" />
             </div>
@@ -233,7 +249,9 @@ export default function PlanPage() {
             <p className="text-gray-600 mb-8 max-w-md mx-auto">
               Our AI will analyze your capacity, goals, and tasks to create a personalized schedule that works for you.
             </p>
-            <button
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={generatePlan}
               disabled={generating}
               className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-8 py-4 rounded-xl hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3 mx-auto font-semibold shadow-lg hover:shadow-xl transition-all"
@@ -249,8 +267,8 @@ export default function PlanPage() {
                   Generate AI Plan
                 </>
               )}
-            </button>
-          </div>
+            </motion.button>
+          </motion.div>
         )}
 
         {plan && (
@@ -320,15 +338,20 @@ export default function PlanPage() {
                 </span>
               </div>
               <div className="space-y-3">
-                {plan.tasks.map((task) => (
-                  <div
-                    key={task.id}
-                    className={`border-2 rounded-xl p-4 transition-all ${
-                      task.completed
-                        ? 'bg-gray-50 border-gray-200 opacity-60'
-                        : 'bg-white border-gray-200 hover:border-emerald-300 hover:shadow-md'
-                    }`}
-                  >
+                <AnimatePresence mode="popLayout">
+                  {plan.tasks.map((task, index) => (
+                    <motion.div
+                      key={task.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, x: -100 }}
+                      transition={{ duration: 0.3, delay: index * 0.05 }}
+                      className={`border-2 rounded-xl p-4 transition-all ${
+                        task.completed
+                          ? 'bg-gray-50 border-gray-200 opacity-60'
+                          : 'bg-white border-gray-200 hover:border-emerald-300 hover:shadow-md'
+                      }`}
+                    >
                     <div className="flex items-start gap-3">
                       <button
                         onClick={() =>
@@ -401,15 +424,25 @@ export default function PlanPage() {
                           )}
                           <span>{task.estimatedMinutes} min</span>
                         </div>
+                        {/* Skip Risk Badge */}
+                        {task.skipRisk && task.skipRiskPercentage && (
+                          <div className="mt-2">
+                            <SkipRiskBadge
+                              riskLevel={task.skipRisk}
+                              riskPercentage={task.skipRiskPercentage}
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
                 ))}
+              </AnimatePresence>
               </div>
             </div>
           </>
         )}
-      </div>
+      </motion.div>
     </DashboardLayout>
   );
 }

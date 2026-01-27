@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 import DashboardLayout from '@/components/DashboardLayout';
 import GoalForm from '@/components/GoalForm';
+import LoadingSpinner from '@/components/LoadingSpinner';
 import { Target, Plus, Briefcase, Heart, Star, Calendar, Edit2, Trash2, Loader2, AlertCircle } from 'lucide-react';
 
 interface Goal {
@@ -132,7 +134,7 @@ export default function GoalsPage() {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+          <LoadingSpinner size="lg" text="Loading your goals..." />
         </div>
       </DashboardLayout>
     );
@@ -159,18 +161,28 @@ export default function GoalsPage() {
 
         {/* Create Goal Button */}
         {!showForm && !editingGoal && (
-          <button
+          <motion.button
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => setShowForm(true)}
             className="w-full mb-6 py-4 px-6 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-semibold rounded-xl hover:from-emerald-700 hover:to-teal-700 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
           >
             <Plus className="w-5 h-5" />
             <span>Create New Goal</span>
-          </button>
+          </motion.button>
         )}
 
         {/* Goal Form */}
-        {(showForm || editingGoal) && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-6">
+        <AnimatePresence>
+          {(showForm || editingGoal) && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-6"
+            >
             <h2 className="text-2xl font-bold text-gray-900 mb-6">
               {editingGoal ? 'Edit Goal' : 'Create New Goal'}
             </h2>
@@ -196,8 +208,9 @@ export default function GoalsPage() {
               }
               isEditing={!!editingGoal}
             />
-          </div>
+          </motion.div>
         )}
+      </AnimatePresence>
 
         {/* Goals List */}
         {goals.length === 0 ? (
@@ -214,11 +227,16 @@ export default function GoalsPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {goals.map((goal) => (
-              <div
-                key={goal.id}
-                className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md hover:border-emerald-200 transition-all"
-              >
+            <AnimatePresence mode="popLayout">
+              {goals.map((goal, index) => (
+                <motion.div
+                  key={goal.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, x: -100 }}
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                  className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md hover:border-emerald-200 transition-all"
+                >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-3">
@@ -269,8 +287,9 @@ export default function GoalsPage() {
                     </button>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             ))}
+          </AnimatePresence>
           </div>
         )}
       </div>

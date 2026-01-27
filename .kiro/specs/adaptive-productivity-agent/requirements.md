@@ -202,16 +202,122 @@ This document specifies the requirements for an AI-powered adaptive productivity
 4. THE Agent SHALL provide a dashboard showing AI decision-making patterns
 5. THE Agent SHALL allow export of Opik data for analysis
 
-### Requirement 14: Notifications (Optional)
+### Requirement 14: Real-Time Adaptive Scheduling
 
-**User Story:** As a user, I want to receive reminders for check-ins and task deadlines, so that I stay on track without constantly checking the app and my year-start goals can materialize.
+**User Story:** As a user, I want the Agent to dynamically adapt my schedule throughout the day based on actual progress, so that my plan stays realistic as reality unfolds.
 
 #### Acceptance Criteria
 
-1. WHEN a user has not completed a daily check-in by 9 AM, THE Agent SHALL send a motivational reminder notification referencing their goals
-2. THE notification SHALL include a personalized message connecting the daily check-in to their year-start goals (e.g., "Ready to make progress on [Goal]? Check in to plan your day")
+1. WHEN a task is completed earlier than scheduled, THE Agent SHALL detect the early completion and offer to reschedule remaining tasks
+2. WHEN a task is running behind schedule, THE Agent SHALL detect the delay and suggest schedule adjustments
+3. WHEN the user is more than 30 minutes behind schedule, THE Agent SHALL trigger a "rescue schedule" that protects core tasks
+4. THE Agent SHALL track momentum state (strong, normal, weak, collapsed) based on task completion patterns
+5. WHEN momentum is strong (early completions), THE Agent SHALL suggest pulling forward additional tasks
+6. WHEN momentum collapses (2+ skipped tasks), THE Agent SHALL intervene with simplified plan
+7. THE Agent SHALL sync with task management platforms (Todoist) to detect completions not in the original plan
+8. WHEN unplanned completions are detected, THE Agent SHALL celebrate and offer to add more tasks
+
+### Requirement 15: Time Blindness Compensation
+
+**User Story:** As a user with ADHD, I want the Agent to compensate for my time blindness by learning how long tasks actually take me, so that schedules become more realistic over time.
+
+#### Acceptance Criteria
+
+1. THE Agent SHALL track actual task duration vs estimated duration for all completed tasks
+2. THE Agent SHALL calculate a time blindness buffer multiplier based on historical completion data
+3. WHEN scheduling tasks, THE Agent SHALL apply learned buffers to time estimates
+4. THE Agent SHALL calculate different buffers for different task types (writing, coding, admin, etc.)
+5. WHEN a user has limited history, THE Agent SHALL use conservative default buffers
+6. THE Agent SHALL adjust buffers based on time of day (afternoon tasks need more buffer due to fatigue)
+7. THE Agent SHALL account for task switching costs by adding transition time between different task types
+8. THE Agent SHALL display time blindness insights showing how estimates compare to reality
+
+### Requirement 16: Productivity Window Optimization
+
+**User Story:** As a user, I want tasks scheduled during my peak productivity hours, so that I'm more likely to complete them successfully.
+
+#### Acceptance Criteria
+
+1. THE Agent SHALL track task completion rates by hour of day
+2. THE Agent SHALL identify peak productivity windows (hours with highest completion rates)
+3. WHEN scheduling tasks, THE Agent SHALL prioritize high-value tasks during peak windows
+4. THE Agent SHALL avoid scheduling demanding tasks during known slump periods (e.g., post-lunch)
+5. THE Agent SHALL track productivity patterns by task type (creative work best at 9am, admin best at 3pm)
+6. THE Agent SHALL display productivity window insights showing completion rates by hour
+7. WHEN current time is past peak windows, THE Agent SHALL adjust expectations and buffer times
+
+### Requirement 17: Skip Risk Prediction
+
+**User Story:** As a user, I want the Agent to predict when I'm likely to abandon tasks, so that it can intervene before I derail completely.
+
+#### Acceptance Criteria
+
+1. THE Agent SHALL calculate skip risk (low, medium, high) for each scheduled task
+2. WHEN a user is behind schedule, THE Agent SHALL increase skip risk for remaining tasks
+3. WHEN a user skips one task, THE Agent SHALL predict 60% likelihood of skipping the next task
+4. WHEN a user is more than 30 minutes behind, THE Agent SHALL predict 75% likelihood of abandoning the plan
+5. THE Agent SHALL track "morning start strength" (percentage of morning tasks that get started)
+6. THE Agent SHALL track "afternoon falloff" (percentage of afternoon tasks completed when morning runs over)
+7. WHEN skip risk is high, THE Agent SHALL proactively suggest plan adjustments
+
+### Requirement 18: Intelligent Check-In System
+
+**User Story:** As a user, I want the Agent to check in with me throughout the day and adapt my schedule based on my responses, so that my plan evolves with reality.
+
+#### Acceptance Criteria
+
+1. THE Agent SHALL schedule check-in notifications at user-configured times (default: 10am, 1pm, 3:30pm)
+2. WHEN a check-in time arrives, THE Agent SHALL sync with task management platform to check completion status
+3. THE notification SHALL reference specific tasks and their current status ("I see the proposal isn't marked complete in Todoist yet")
+4. THE Agent SHALL provide response options (e.g., "Done", "Still working", "Stuck")
+5. WHEN user responds "Still working", THE Agent SHALL offer to extend time and defer other tasks
+6. WHEN user responds "Stuck", THE Agent SHALL offer to defer the task and suggest easier wins
+7. WHEN user responds "Done", THE Agent SHALL celebrate and continue with the plan
+8. THE Agent SHALL adapt notification tone based on user preference (gentle, direct, minimal)
+
+### Requirement 19: Mid-Day Re-Scheduling
+
+**User Story:** As a user, I want my schedule to be rebuilt mid-day based on what's actually happened, so that the afternoon plan is realistic.
+
+#### Acceptance Criteria
+
+1. WHEN a check-in occurs mid-day, THE Agent SHALL analyze current progress vs original plan
+2. THE Agent SHALL calculate minutes ahead or behind schedule
+3. WHEN ahead of schedule, THE Agent SHALL suggest starting next tasks early or adding new tasks
+4. WHEN behind schedule, THE Agent SHALL rebuild the afternoon schedule with adjusted priorities
+5. THE Agent SHALL protect high-priority and due-soon tasks when re-scheduling
+6. THE Agent SHALL defer low-priority tasks when capacity is exceeded
+7. THE Agent SHALL explain re-scheduling decisions with clear reasoning
+8. THE Agent SHALL maintain a history of schedule adaptations for learning
+
+### Requirement 20: Momentum Tracking
+
+**User Story:** As a user, I want the Agent to recognize when I'm in a flow state and capitalize on it, so that I can accomplish more during high-momentum periods.
+
+#### Acceptance Criteria
+
+1. THE Agent SHALL track momentum state: strong, normal, weak, or collapsed
+2. WHEN a task is completed early, THE Agent SHALL set momentum state to "strong"
+3. WHEN momentum is strong, THE Agent SHALL boost completion predictions for remaining tasks
+4. WHEN a task is skipped, THE Agent SHALL downgrade momentum state
+5. WHEN 2+ tasks are skipped in a row, THE Agent SHALL set momentum to "collapsed"
+6. WHEN momentum collapses, THE Agent SHALL trigger intervention (simplified plan, encouragement)
+7. THE Agent SHALL track "completion-after-early-win rate" (likelihood of completing next task after early completion)
+8. THE Agent SHALL display momentum state to user with appropriate messaging
+
+### Requirement 21: Adaptive Notifications
+
+**User Story:** As a user, I want notifications that adapt to my current state and progress, so that they're helpful rather than annoying.
+
+#### Acceptance Criteria
+
+1. WHEN a user has not completed a daily check-in by 9 AM, THE Agent SHALL send a motivational reminder referencing their goals
+2. THE notification SHALL include a personalized message connecting the daily check-in to their year-start goals
 3. WHEN a high-priority task is scheduled to start, THE Agent SHALL send a notification 5 minutes before
-4. THE Agent SHALL allow users to configure notification preferences including time and frequency
-5. THE Agent SHALL support browser push notifications
-6. THE Agent SHALL support email notifications as a fallback
-7. WHEN a user sets goals at the beginning of the year, THE Agent SHALL store those goals and reference them in check-in reminders
+4. WHEN a user completes a task early, THE Agent SHALL send a celebration notification with momentum suggestion
+5. WHEN a user is behind schedule, THE Agent SHALL send a supportive (not guilt-inducing) check-in
+6. THE Agent SHALL allow users to configure notification style (gentle, direct, minimal)
+7. WHERE notification style is "gentle", THE Agent SHALL use supportive language ("How's it going? 💙")
+8. WHERE notification style is "direct", THE Agent SHALL use concise language ("Proposal status? Done/Working/Stuck?")
+9. WHERE notification style is "minimal", THE Agent SHALL use minimal text ("Proposal done?")
+10. THE Agent SHALL support browser push notifications and email notifications

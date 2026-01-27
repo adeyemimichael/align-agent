@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { getUserByEmail } from '@/lib/db-utils';
+import { CacheInvalidation } from '@/lib/cache';
 import { z } from 'zod';
+import { handleAPIError } from '@/lib/api-error-handler';
+import { AuthError, NotFoundError, ValidationError, DatabaseError } from '@/lib/errors';
 
 // Validation schema for check-in data
 const checkInSchema = z.object({
@@ -57,7 +61,7 @@ export async function POST(request: NextRequest) {
     const session = await auth();
 
     if (!session || !session.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw new AuthError('Please sign in to submit a check-in');
     }
 
     const body = await request.json();
@@ -65,10 +69,7 @@ export async function POST(request: NextRequest) {
     // Validate input
     const validationResult = checkInSchema.safeParse(body);
     if (!validationResult.success) {
-      return NextResponse.json(
-        { error: 'Invalid input', details: validationResult.error.issues },
-        { status: 400 }
-      );
+      throw new ValidationError('Invalid check-in data', validationResult.error.issues);
     }
 
     const { energy, sleep, stress, mood } = validationResult.data;
@@ -77,13 +78,11 @@ export async function POST(request: NextRequest) {
     const capacityScore = calculateCapacityScore(energy, sleep, stress, mood);
     const mode = selectMode(capacityScore);
 
-    // Get user from database
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
+    // Get user from database (with caching)
+    const user = await getUserByEmail(session.user.email);
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      throw new NotFoundError('User');
     }
 
     // Get today's date at midnight (UTC)
@@ -91,39 +90,46 @@ export async function POST(request: NextRequest) {
     today.setUTCHours(0, 0, 0, 0);
 
     // Upsert check-in (create or update if exists for today)
-    const checkIn = await prisma.checkIn.upsert({
-      where: {
-        userId_date: {
+    let checkIn;
+    try {
+      checkIn = await prisma.checkIn.upsert({
+        where: {
+          userId_date: {
+            userId: user.id,
+            date: today,
+          },
+        },
+        update: {
+          energy,
+          sleep,
+          stress,
+          mood,
+          capacityScore,
+          mode,
+        },
+        create: {
           userId: user.id,
           date: today,
+          energy,
+          sleep,
+          stress,
+          mood,
+          capacityScore,
+          mode,
         },
-      },
-      update: {
-        energy,
-        sleep,
-        stress,
-        mood,
-        capacityScore,
-        mode,
-      },
-      create: {
-        userId: user.id,
-        date: today,
-        energy,
-        sleep,
-        stress,
-        mood,
-        capacityScore,
-        mode,
-      },
-    });
+      });
+    } catch (dbError) {
+      throw new DatabaseError('Failed to save check-in', dbError);
+    }
+
+    // Invalidate related caches
+    CacheInvalidation.onCheckIn(user.id);
 
     return NextResponse.json(checkIn, { status: 200 });
   } catch (error) {
-    console.error('Check-in error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return handleAPIError(error, {
+      operation: 'POST /api/checkin',
+      userId: (await auth())?.user?.email,
+    });
   }
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { getUserByEmail, getCheckInHistory } from '@/lib/db-utils';
+import { cache, CacheKeys } from '@/lib/cache';
 import {
   detectCapacityPatterns,
   predictCapacity,
@@ -17,29 +18,22 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get user from database
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
+    // Get user from database (with caching)
+    const user = await getUserByEmail(session.user.email);
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Get 7-day history
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    // Check cache first
+    const cacheKey = CacheKeys.patterns(user.id);
+    const cached = cache.get<any>(cacheKey);
+    if (cached) {
+      return NextResponse.json(cached);
+    }
 
-    const history = await prisma.checkIn.findMany({
-      where: {
-        userId: user.id,
-        date: {
-          gte: sevenDaysAgo,
-        },
-      },
-      orderBy: { date: 'desc' },
-      take: 7,
-    });
+    // Get 7-day history (with caching)
+    const history = await getCheckInHistory(user.id, 7);
 
     if (history.length === 0) {
       return NextResponse.json({
@@ -65,12 +59,17 @@ export async function GET(request: NextRequest) {
     const prediction = predictCapacity(checkInHistory);
     const factors = analyzeCapacityFactors(checkInHistory);
 
-    return NextResponse.json({
+    const result = {
       patterns,
       prediction,
       factors,
       historyCount: history.length,
-    });
+    };
+
+    // Cache for 30 minutes
+    cache.set(cacheKey, result, 1800);
+
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Pattern analysis error:', error);
     return NextResponse.json(

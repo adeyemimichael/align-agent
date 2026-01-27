@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import DashboardLayout from "@/components/DashboardLayout";
 import CapacityScoreCircle from "@/components/CapacityScoreCircle";
 import CapacityTrendChart from "@/components/CapacityTrendChart";
+import MomentumIndicator from "@/components/MomentumIndicator";
 import { Sparkles, TrendingUp, Calendar, Target, Zap } from "lucide-react";
 
 export const runtime = 'nodejs';
@@ -224,11 +225,18 @@ export default async function DashboardPage({
 
           {/* 7-Day Capacity Trend */}
           {checkInHistory.length > 0 && (
-            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
+            <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200 mb-6">
               <h2 className="text-xl font-bold text-gray-900 mb-6">
                 7-Day Capacity Trend
               </h2>
               <CapacityTrendChart data={checkInHistory} />
+            </div>
+          )}
+
+          {/* Momentum Indicator */}
+          {latestCheckIn && (
+            <div className="mb-6">
+              <MomentumIndicator />
             </div>
           )}
         </div>

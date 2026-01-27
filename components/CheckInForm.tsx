@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Smile, Meh, Frown, Zap, Moon, Brain, Loader2 } from 'lucide-react';
 
 type Mood = 'positive' | 'neutral' | 'negative';
@@ -90,7 +91,12 @@ export default function CheckInForm() {
   return (
     <form onSubmit={handleSubmit} className="w-full space-y-8">
       {/* Energy Level */}
-      <div className="space-y-4">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.1 }}
+        className="space-y-4"
+      >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-100 rounded-lg">
@@ -120,10 +126,15 @@ export default function CheckInForm() {
           <span>Low</span>
           <span>High</span>
         </div>
-      </div>
+      </motion.div>
 
       {/* Sleep Quality */}
-      <div className="space-y-4">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.2 }}
+        className="space-y-4"
+      >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-purple-100 rounded-lg">
@@ -153,10 +164,15 @@ export default function CheckInForm() {
           <span>Poor</span>
           <span>Excellent</span>
         </div>
-      </div>
+      </motion.div>
 
       {/* Stress Level */}
-      <div className="space-y-4">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.3 }}
+        className="space-y-4"
+      >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-orange-100 rounded-lg">
@@ -186,13 +202,20 @@ export default function CheckInForm() {
           <span>Low</span>
           <span>High</span>
         </div>
-      </div>
+      </motion.div>
 
       {/* Mood Selector */}
-      <div className="space-y-4">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.4 }}
+        className="space-y-4"
+      >
         <label className="text-lg font-semibold text-gray-900 block">How are you feeling?</label>
         <div className="grid grid-cols-3 gap-4">
-          <button
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             type="button"
             onClick={() => handleMoodChange('positive')}
             className={`relative py-6 px-4 rounded-xl border-2 transition-all ${
@@ -208,10 +231,16 @@ export default function CheckInForm() {
               </div>
             </div>
             {formData.mood === 'positive' && (
-              <div className="absolute top-2 right-2 w-3 h-3 bg-emerald-500 rounded-full"></div>
+              <motion.div 
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="absolute top-2 right-2 w-3 h-3 bg-emerald-500 rounded-full"
+              />
             )}
-          </button>
-          <button
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             type="button"
             onClick={() => handleMoodChange('neutral')}
             className={`relative py-6 px-4 rounded-xl border-2 transition-all ${
@@ -227,10 +256,16 @@ export default function CheckInForm() {
               </div>
             </div>
             {formData.mood === 'neutral' && (
-              <div className="absolute top-2 right-2 w-3 h-3 bg-gray-500 rounded-full"></div>
+              <motion.div 
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="absolute top-2 right-2 w-3 h-3 bg-gray-500 rounded-full"
+              />
             )}
-          </button>
-          <button
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             type="button"
             onClick={() => handleMoodChange('negative')}
             className={`relative py-6 px-4 rounded-xl border-2 transition-all ${
@@ -246,21 +281,37 @@ export default function CheckInForm() {
               </div>
             </div>
             {formData.mood === 'negative' && (
-              <div className="absolute top-2 right-2 w-3 h-3 bg-orange-500 rounded-full"></div>
+              <motion.div 
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="absolute top-2 right-2 w-3 h-3 bg-orange-500 rounded-full"
+              />
             )}
-          </button>
+          </motion.button>
         </div>
-      </div>
+      </motion.div>
 
       {/* Error Message */}
-      {error && (
-        <div className="p-4 bg-red-50 border-2 border-red-200 rounded-xl">
-          <p className="text-sm text-red-600 font-medium">{error}</p>
-        </div>
-      )}
+      <AnimatePresence>
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="p-4 bg-red-50 border-2 border-red-200 rounded-xl"
+          >
+            <p className="text-sm text-red-600 font-medium">{error}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Submit Button */}
-      <button
+      <motion.button
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.5 }}
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
         type="submit"
         disabled={isSubmitting}
         className="w-full py-4 px-6 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-semibold rounded-xl hover:from-emerald-700 hover:to-teal-700 disabled:from-gray-400 disabled:to-gray-400 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
@@ -273,7 +324,7 @@ export default function CheckInForm() {
         ) : (
           'Complete Check-In'
         )}
-      </button>
+      </motion.button>
     </form>
   );
 }

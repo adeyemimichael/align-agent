@@ -1,4 +1,5 @@
 import { decryptToken } from './encryption';
+import { ExternalAPIError } from './errors';
 
 export interface CalendarEvent {
   id?: string;
@@ -66,8 +67,10 @@ export class GoogleCalendarClient {
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(
-        `Google Calendar API error: ${response.status} ${response.statusText} - ${errorText}`
+      throw new ExternalAPIError(
+        'Google Calendar',
+        `Failed to create event: ${response.status} ${response.statusText}`,
+        { statusCode: response.status, errorText, event }
       );
     }
 
@@ -96,8 +99,10 @@ export class GoogleCalendarClient {
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(
-        `Google Calendar API error: ${response.status} ${response.statusText} - ${errorText}`
+      throw new ExternalAPIError(
+        'Google Calendar',
+        `Failed to update event: ${response.status} ${response.statusText}`,
+        { statusCode: response.status, errorText, eventId }
       );
     }
 
@@ -123,8 +128,10 @@ export class GoogleCalendarClient {
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(
-        `Google Calendar API error: ${response.status} ${response.statusText} - ${errorText}`
+      throw new ExternalAPIError(
+        'Google Calendar',
+        `Failed to delete event: ${response.status} ${response.statusText}`,
+        { statusCode: response.status, errorText, eventId }
       );
     }
   }
@@ -151,8 +158,10 @@ export class GoogleCalendarClient {
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(
-        `Google Calendar API error: ${response.status} ${response.statusText} - ${errorText}`
+      throw new ExternalAPIError(
+        'Google Calendar',
+        `Failed to list events: ${response.status} ${response.statusText}`,
+        { statusCode: response.status, errorText, timeMin, timeMax }
       );
     }
 
@@ -184,7 +193,11 @@ export async function refreshGoogleToken(refreshToken: string): Promise<{
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
   if (!clientId || !clientSecret) {
-    throw new Error('Google OAuth credentials not configured');
+    throw new ExternalAPIError(
+      'Google Calendar',
+      'Google OAuth credentials not configured',
+      { missing: !clientId ? 'GOOGLE_CLIENT_ID' : 'GOOGLE_CLIENT_SECRET' }
+    );
   }
 
   const response = await fetch('https://oauth2.googleapis.com/token', {
@@ -202,7 +215,11 @@ export async function refreshGoogleToken(refreshToken: string): Promise<{
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Token refresh failed: ${response.status} - ${errorText}`);
+    throw new ExternalAPIError(
+      'Google Calendar',
+      `Token refresh failed: ${response.status}`,
+      { statusCode: response.status, errorText }
+    );
   }
 
   return response.json();
