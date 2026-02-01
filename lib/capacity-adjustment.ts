@@ -223,13 +223,13 @@ export async function getCapacityInsights(userId: string): Promise<{
   let recommendation = '';
   if (avgCompletionRate >= 80) {
     recommendation =
-      'Excellent! You're consistently completing your planned tasks. Consider taking on more challenging work.';
+      'Excellent! You\'re consistently completing your planned tasks. Consider taking on more challenging work.';
   } else if (avgCompletionRate >= 60) {
     recommendation =
-      'Good progress! You're completing most of your planned tasks. Keep up the momentum.';
+      'Good progress! You\'re completing most of your planned tasks. Keep up the momentum.';
   } else if (avgCompletionRate >= 40) {
     recommendation =
-      'Your completion rate could be improved. Consider if you're planning too many tasks or if your capacity estimates need adjustment.';
+      'Your completion rate could be improved. Consider if you\'re planning too many tasks or if your capacity estimates need adjustment.';
   } else {
     recommendation =
       'Your completion rate is low. Try planning fewer tasks or focusing on recovery activities to build momentum.';

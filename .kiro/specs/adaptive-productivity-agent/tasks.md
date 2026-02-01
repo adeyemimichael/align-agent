@@ -470,54 +470,54 @@ This implementation plan breaks down the adaptive productivity agent into discre
     - _Requirements: 19.3, 19.4, 19.8_
 
 - [ ] 27. Adaptive Notification System
-  - [ ] 27.1 Create notification generator with tone adaptation
+  - [x] 27.1 Create notification generator with tone adaptation
     - Implement gentle tone templates
     - Implement direct tone templates
     - Implement minimal tone templates
     - _Requirements: 21.6, 21.7, 21.8, 21.9_
 
-  - [ ] 27.2 Implement smart notification timing
+  - [x] 27.2 Implement smart notification timing
     - Don't interrupt during first 15 minutes of task
     - Batch notifications within 10-minute windows
     - Respect Do Not Disturb hours
     - _Requirements: 21.3_
 
-  - [ ] 27.3 Build notification types
+  - [x] 27.3 Build notification types
     - Morning check-in reminder with goal reference
     - Task start reminder (5 minutes before)
     - Celebration notification (early completion)
     - Supportive check-in (behind schedule)
     - _Requirements: 21.1, 21.2, 21.3, 21.4, 21.5_
 
-  - [ ] 27.4 Integrate with notification preferences
+  - [x] 27.4 Integrate with notification preferences
     - Allow users to configure notification style
     - Allow users to configure check-in times
     - Support browser push and email notifications
     - _Requirements: 21.10_
 
-- [ ] 28. Enhanced Gemini AI Agent Integration
-  - [ ] 28.1 Update AI prompt with full context
+- [x] 28. Enhanced Gemini AI Agent Integration
+  - [x] 28.1 Update AI prompt with full context
     - Include time blindness buffers in prompt
     - Include productivity windows in prompt
     - Include skip risk and momentum state in prompt
     - Include current progress and real-time data in prompt
     - _Requirements: 14-21 (all adaptive features)_
 
-  - [ ] 28.2 Implement AI response parsing for adaptive features
+  - [x] 28.2 Implement AI response parsing for adaptive features
     - Parse skip risk predictions from AI
     - Parse momentum state recommendations from AI
     - Parse check-in notification suggestions from AI
     - Parse re-scheduling decisions from AI
     - _Requirements: 14-21 (all adaptive features)_
 
-  - [ ] 28.3 Build AI reasoning display for adaptive decisions
+  - [x] 28.3 Build AI reasoning display for adaptive decisions
     - Show why AI suggested re-schedule
     - Show why AI predicted high skip risk
     - Show why AI recommended momentum intervention
     - _Requirements: 14-21 (all adaptive features)_
 
-- [ ] 29. Database Schema Updates for Adaptive Features
-  - [ ] 29.1 Add fields to PlanTask model
+- [-] 29. Database Schema Updates for Adaptive Features
+  - [x] 29.1 Add fields to PlanTask model
     - Add actualStartTime field
     - Add actualEndTime field
     - Add actualMinutes field
@@ -525,7 +525,7 @@ This implementation plan breaks down the adaptive productivity agent into discre
     - Add momentumState field
     - _Requirements: 14, 15, 17, 20_
 
-  - [ ] 29.2 Create ScheduleAdaptation model
+  - [x] 29.2 Create ScheduleAdaptation model
     - Store schedule adaptations (re-schedules)
     - Track trigger (check-in, behind schedule, momentum collapse)
     - Store reasoning for adaptation

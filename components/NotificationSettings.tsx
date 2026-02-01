@@ -240,6 +240,41 @@ export default function NotificationSettings() {
               )}
             </div>
 
+            {/* Notification Tone */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Bell className="w-4 h-4 text-gray-600" />
+                <label className="font-medium text-gray-900">Notification Style</label>
+              </div>
+              <select
+                value={preferences.tone || 'gentle'}
+                onChange={(e) => {
+                  const newPreferences = {
+                    ...preferences,
+                    tone: e.target.value as 'gentle' | 'direct' | 'minimal',
+                  };
+                  savePreferences(newPreferences);
+                }}
+                disabled={saving}
+                className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              >
+                <option value="gentle">Gentle - Supportive and encouraging</option>
+                <option value="direct">Direct - Concise and to the point</option>
+                <option value="minimal">Minimal - Brief and minimal text</option>
+              </select>
+              <div className="text-sm text-gray-600 space-y-1">
+                <p>
+                  <strong>Gentle:</strong> "How's it going? 💙 No pressure, just want to help you finish strong!"
+                </p>
+                <p>
+                  <strong>Direct:</strong> "Task status? Done/Working/Stuck?"
+                </p>
+                <p>
+                  <strong>Minimal:</strong> "Task done?"
+                </p>
+              </div>
+            </div>
+
             {/* Notification Channels */}
             <div className="space-y-3 pt-4 border-t">
               <h3 className="font-medium text-gray-900">Notification Channels</h3>

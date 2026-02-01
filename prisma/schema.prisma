@@ -10,8 +10,8 @@ datasource db {
 }
 
 model User {
-  id                       String        @id @default(cuid())
-  email                    String        @unique
+  id                       String                  @id @default(cuid())
+  email                    String                  @unique
   name                     String?
   emailVerified            DateTime?
   image                    String?
@@ -21,9 +21,11 @@ model User {
   plans                    DailyPlan[]
   goals                    Goal[]
   integrations             Integration[]
-  notificationPreferences  Json?         // Notification settings
-  createdAt                DateTime      @default(now())
-  updatedAt                DateTime      @updatedAt
+  scheduleAdaptations      ScheduleAdaptation[]
+  checkInNotifications     CheckInNotification[]
+  notificationPreferences  Json?                   // Notification settings
+  createdAt                DateTime                @default(now())
+  updatedAt                DateTime                @updatedAt
 }
 
 model Account {
@@ -151,4 +153,48 @@ model Integration {
 
   @@unique([userId, platform])
   @@index([userId])
+}
+
+model ScheduleAdaptation {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId          String?  // Reference to the original plan
+  date            DateTime // Date of the adaptation
+  trigger         String   // 'check_in', 'behind_schedule', 'momentum_collapse', 'user_request'
+  triggerDetails  Json?    // Additional context about the trigger
+  reasoning       String   @db.Text // AI reasoning for the adaptation
+  originalSchedule Json    // Snapshot of original schedule
+  adaptedSchedule  Json    // New adapted schedule
+  minutesBehind   Int?     // How far behind schedule when triggered
+  tasksDeferred   Int?     // Number of tasks deferred
+  tasksAdded      Int?     // Number of tasks added
+  accepted        Boolean  @default(false) // Whether user accepted the adaptation
+  createdAt       DateTime @default(now())
+
+  @@index([userId, date])
+  @@index([trigger])
+}
+
+model CheckInNotification {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scheduledTime   DateTime // When the notification was scheduled
+  sentAt          DateTime? // When the notification was actually sent
+  type            String   // 'scheduled', 'progress_based', 'risk_based'
+  trigger         String?  // What triggered the notification (e.g., 'behind_schedule', 'momentum_collapse')
+  message         String   @db.Text // The notification message sent
+  tone            String   // 'gentle', 'direct', 'minimal'
+  taskReference   String?  // Task being referenced in the notification
+  taskStatus      String?  // Status of the task at notification time
+  userResponse    String?  // User's response: 'done', 'still_working', 'stuck', 'ignored'
+  respondedAt     DateTime? // When user responded
+  adaptiveAction  String?  // Action taken based on response: 'extend_time', 'defer_task', 'celebrate', 'simplify_plan'
+  actionDetails   Json?    // Details about the adaptive action taken
+  createdAt       DateTime @default(now())
+
+  @@index([userId, scheduledTime])
+  @@index([type, sentAt])
+  @@index([userResponse])
 }

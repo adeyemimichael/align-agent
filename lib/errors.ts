@@ -182,11 +182,11 @@ export function getUserFriendlyMessage(error: unknown): string {
   }
 
   if (error instanceof AIServiceError) {
-    return 'Our AI assistant is temporarily unavailable. We'll use a simplified planning approach.';
+    return 'Our AI assistant is temporarily unavailable. We\'ll use a simplified planning approach.';
   }
 
   if (error instanceof RateLimitError) {
-    return 'You're making requests too quickly. Please wait a moment and try again.';
+    return 'You\'re making requests too quickly. Please wait a moment and try again.';
   }
 
   if (error instanceof AppError) {
