@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { auth } from '@/lib/auth';
 import { syncTaskAppProgress, getUnplannedCompletions } from '@/lib/task-app-sync';
 import { handleAPIError } from '@/lib/api-error-handler';
 import { prisma } from '@/lib/prisma';
@@ -11,7 +10,7 @@ import { prisma } from '@/lib/prisma';
  */
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -37,7 +36,10 @@ export async function POST(request: NextRequest) {
       ...syncResult,
     });
   } catch (error) {
-    return handleAPIError(error, 'Failed to sync with task app');
+    return handleAPIError(error, {
+      operation: 'POST /api/progress/sync',
+      userId: undefined
+    });
   }
 }
 
@@ -47,7 +49,7 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -68,6 +70,9 @@ export async function GET(request: NextRequest) {
       unplannedCompletions,
     });
   } catch (error) {
-    return handleAPIError(error, 'Failed to get unplanned completions');
+    return handleAPIError(error, {
+      operation: 'GET /api/progress/sync',
+      userId: undefined
+    });
   }
 }

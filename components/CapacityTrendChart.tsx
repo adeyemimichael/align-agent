@@ -2,9 +2,9 @@
 
 interface CheckInData {
   date: Date;
-  energyLevel: number;
-  sleepQuality: number;
-  stressLevel: number;
+  energy: number;
+  sleep: number;
+  stress: number;
   capacityScore: number;
 }
 
@@ -66,9 +66,9 @@ export default function CapacityTrendChart({ data }: CapacityTrendChartProps) {
       .join(' ');
   };
 
-  const energyPoints = generatePoints((d) => d.energyLevel ?? 0);
-  const sleepPoints = generatePoints((d) => d.sleepQuality ?? 0);
-  const stressPoints = generatePoints((d) => d.stressLevel ?? 0);
+  const energyPoints = generatePoints((d) => d.energy ?? 0);
+  const sleepPoints = generatePoints((d) => d.sleep ?? 0);
+  const stressPoints = generatePoints((d) => d.stress ?? 0);
 
   // Format date for display
   const formatDate = (date: Date) => {
@@ -139,7 +139,7 @@ export default function CapacityTrendChart({ data }: CapacityTrendChartProps) {
           {/* Energy points */}
           {sortedData.map((d, i) => {
             const x = padding.left + i * xStep;
-            const energyValue = d.energyLevel ?? 0;
+            const energyValue = d.energy ?? 0;
             const y =
               padding.top + chartHeight - (energyValue / maxValue) * chartHeight;
             return (
@@ -168,7 +168,7 @@ export default function CapacityTrendChart({ data }: CapacityTrendChartProps) {
           {/* Sleep points */}
           {sortedData.map((d, i) => {
             const x = padding.left + i * xStep;
-            const sleepValue = d.sleepQuality ?? 0;
+            const sleepValue = d.sleep ?? 0;
             const y =
               padding.top + chartHeight - (sleepValue / maxValue) * chartHeight;
             return (
@@ -197,7 +197,7 @@ export default function CapacityTrendChart({ data }: CapacityTrendChartProps) {
           {/* Stress points */}
           {sortedData.map((d, i) => {
             const x = padding.left + i * xStep;
-            const stressValue = d.stressLevel ?? 0;
+            const stressValue = d.stress ?? 0;
             const y =
               padding.top + chartHeight - (stressValue / maxValue) * chartHeight;
             return (
@@ -239,7 +239,7 @@ export default function CapacityTrendChart({ data }: CapacityTrendChartProps) {
           <div className="text-sm text-gray-600 mb-1">Avg Energy</div>
           <div className="text-2xl font-bold text-emerald-600">
             {(
-              sortedData.reduce((sum, d) => sum + d.energyLevel, 0) /
+              sortedData.reduce((sum, d) => sum + d.energy, 0) /
               sortedData.length
             ).toFixed(1)}
           </div>
@@ -248,7 +248,7 @@ export default function CapacityTrendChart({ data }: CapacityTrendChartProps) {
           <div className="text-sm text-gray-600 mb-1">Avg Sleep</div>
           <div className="text-2xl font-bold text-blue-600">
             {(
-              sortedData.reduce((sum, d) => sum + d.sleepQuality, 0) /
+              sortedData.reduce((sum, d) => sum + d.sleep, 0) /
               sortedData.length
             ).toFixed(1)}
           </div>
@@ -257,7 +257,7 @@ export default function CapacityTrendChart({ data }: CapacityTrendChartProps) {
           <div className="text-sm text-gray-600 mb-1">Avg Stress</div>
           <div className="text-2xl font-bold text-red-600">
             {(
-              sortedData.reduce((sum, d) => sum + d.stressLevel, 0) /
+              sortedData.reduce((sum, d) => sum + d.stress, 0) /
               sortedData.length
             ).toFixed(1)}
           </div>

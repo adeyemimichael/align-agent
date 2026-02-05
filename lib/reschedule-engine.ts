@@ -164,12 +164,20 @@ export async function analyzeProgress(planId: string): Promise<ProgressAnalysis>
     momentumState.state
   );
 
+  // Requirement 20.6, 20.7: Trigger interventions when momentum collapses
+  // Requirement 20.3: Boost predictions when momentum is strong
+  const { getMomentumPredictionAdjustment, shouldTriggerIntervention } = await import('./momentum-tracker');
+  const momentumAdjustment = getMomentumPredictionAdjustment(momentumState.state);
+  const needsMomentumIntervention = shouldTriggerIntervention(momentumState);
+
   // Determine if reschedule is needed
+  // Requirement 20.6: WHEN momentum collapses, THE Agent SHALL trigger intervention
   const { needsReschedule, rescheduleReason, rescheduleType } = determineRescheduleNeed(
     progress.minutesAheadBehind,
     capacityExceeded,
     momentumState.state,
-    overallSkipRisk
+    overallSkipRisk,
+    needsMomentumIntervention
   );
 
   // Get current task
@@ -231,13 +239,24 @@ function determineRescheduleNeed(
   minutesAheadBehind: number,
   capacityExceeded: boolean,
   momentumState: string,
-  skipRisk: SkipRiskLevel
+  skipRisk: SkipRiskLevel,
+  needsMomentumIntervention: boolean
 ): {
   needsReschedule: boolean;
   rescheduleReason: string;
   rescheduleType: 'ahead' | 'behind' | 'at_risk' | 'none';
 } {
+  // Requirement 20.6: WHEN momentum collapses, THE Agent SHALL trigger intervention
+  if (needsMomentumIntervention || momentumState === 'collapsed') {
+    return {
+      needsReschedule: true,
+      rescheduleReason: 'Momentum has collapsed. Let\'s simplify and focus on just 1-2 achievable wins.',
+      rescheduleType: 'at_risk',
+    };
+  }
+
   // Ahead of schedule - suggest adding tasks
+  // Requirement 20.5: WHEN momentum is strong (early completions), THE Agent SHALL suggest pulling forward additional tasks
   if (minutesAheadBehind > 30 && momentumState === 'strong') {
     return {
       needsReschedule: true,
@@ -263,15 +282,6 @@ function determineRescheduleNeed(
         ? 'Not enough time remaining for all planned tasks. Let\'s prioritize what matters most.'
         : `You're ${Math.abs(minutesAheadBehind)} minutes behind. Let's adjust the afternoon plan.`,
       rescheduleType: 'behind',
-    };
-  }
-
-  // Momentum collapsed - intervention needed
-  if (momentumState === 'collapsed') {
-    return {
-      needsReschedule: true,
-      rescheduleReason: 'Momentum has collapsed. Let\'s simplify and focus on just 1-2 achievable wins.',
-      rescheduleType: 'at_risk',
     };
   }
 

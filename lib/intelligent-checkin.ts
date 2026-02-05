@@ -371,10 +371,16 @@ async function generateCheckInMessage(
       }
     }
 
+    // Map status to valid CheckInMessage status type
+    const mappedStatus: 'not_started' | 'in_progress' | 'completed' | 'overdue' = 
+      targetTask.status === 'delayed' ? 'overdue' :
+      targetTask.status === 'skipped' ? 'not_started' :
+      targetTask.status;
+
     taskReference = {
       taskId: targetTask.id,
       taskTitle: targetTask.title,
-      status: targetTask.status,
+      status: mappedStatus,
       todoistStatus,
     };
   }

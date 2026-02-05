@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { MomentumIndicator } from './MomentumIndicator';
-import { SkipRiskWarning } from './SkipRiskWarning';
+import MomentumIndicator from './MomentumIndicator';
+import SkipRiskWarning from './SkipRiskWarning';
 import type { MomentumState } from '@/lib/momentum-tracker';
 
 interface ProgressSnapshot {
@@ -219,10 +219,7 @@ export function ProgressTracker({
       </div>
 
       {/* Momentum Indicator */}
-      <MomentumIndicator
-        state={progress.momentumState}
-        showDetails={true}
-      />
+      <MomentumIndicator />
 
       {/* Current Task */}
       {progress.currentTask && (
@@ -261,8 +258,8 @@ export function ProgressTracker({
 
             {progress.currentTask.skipRisk && (
               <SkipRiskWarning
-                level={progress.currentTask.skipRisk.level}
-                percentage={progress.currentTask.skipRisk.percentage}
+                riskLevel={progress.currentTask.skipRisk.level}
+                riskPercentage={progress.currentTask.skipRisk.percentage}
                 reasoning={progress.currentTask.skipRisk.reasoning}
               />
             )}

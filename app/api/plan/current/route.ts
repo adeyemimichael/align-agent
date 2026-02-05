@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
           capacityScore: plan.capacityScore,
           mode: plan.mode,
           reasoning: plan.geminiReasoning,
-          tasks: plan.tasks.map((t) => ({
+          tasks: plan.tasks.map((t: any) => ({
             id: t.id,
             title: t.title,
             description: t.description,

@@ -5,13 +5,12 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { auth } from '@/lib/auth';
 import {
   handleCheckInResponse,
   type CheckInResponse,
 } from '@/lib/intelligent-checkin';
-import { handleApiError } from '@/lib/api-error-handler';
+import { handleAPIError } from '@/lib/api-error-handler';
 
 /**
  * POST /api/checkin/respond
@@ -19,9 +18,9 @@ import { handleApiError } from '@/lib/api-error-handler';
  */
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -51,6 +50,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
-    return handleApiError(error, 'Failed to handle check-in response');
+    return handleAPIError(error, {
+      operation: 'POST /api/checkin/respond',
+      userId: undefined
+    });
   }
 }

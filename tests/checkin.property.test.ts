@@ -38,9 +38,9 @@ describe('Check-in Round-Trip Persistence', () => {
       fc.asyncProperty(
         // Generate random check-in data
         fc.record({
-          energyLevel: fc.integer({ min: 1, max: 10 }),
-          sleepQuality: fc.integer({ min: 1, max: 10 }),
-          stressLevel: fc.integer({ min: 1, max: 10 }),
+          energy: fc.integer({ min: 1, max: 10 }),
+          sleep: fc.integer({ min: 1, max: 10 }),
+          stress: fc.integer({ min: 1, max: 10 }),
           mood: fc.constantFrom('positive', 'neutral', 'negative'),
           capacityScore: fc.float({ min: 0, max: 100 }),
           mode: fc.constantFrom('recovery', 'balanced', 'deep_work'),
@@ -51,9 +51,9 @@ describe('Check-in Round-Trip Persistence', () => {
           const created = await prisma.checkIn.create({
             data: {
               userId: testUserId,
-              energyLevel: checkInData.energyLevel,
-              sleepQuality: checkInData.sleepQuality,
-              stressLevel: checkInData.stressLevel,
+              energy: checkInData.energy,
+              sleep: checkInData.sleep,
+              stress: checkInData.stress,
               mood: checkInData.mood,
               capacityScore: checkInData.capacityScore,
               mode: checkInData.mode,
@@ -70,9 +70,9 @@ describe('Check-in Round-Trip Persistence', () => {
 
           // Assert that retrieved data matches the original input
           expect(retrieved).not.toBeNull()
-          expect(retrieved!.energyLevel).toBe(checkInData.energyLevel)
-          expect(retrieved!.sleepQuality).toBe(checkInData.sleepQuality)
-          expect(retrieved!.stressLevel).toBe(checkInData.stressLevel)
+          expect(retrieved!.energy).toBe(checkInData.energy)
+          expect(retrieved!.sleep).toBe(checkInData.sleep)
+          expect(retrieved!.stress).toBe(checkInData.stress)
           expect(retrieved!.mood).toBe(checkInData.mood)
           expect(retrieved!.capacityScore).toBeCloseTo(checkInData.capacityScore, 5)
           expect(retrieved!.mode).toBe(checkInData.mode)

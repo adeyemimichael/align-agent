@@ -6,16 +6,15 @@ import { TodoistClient } from '@/lib/todoist';
 // POST /api/integrations/todoist/tasks/[id]/complete - Mark task as complete and sync to Todoist
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id: taskId } = await params;
     const session = await auth();
 
     if (!session || !session.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
-    const taskId = params.id;
 
     // Get user from database
     const user = await prisma.user.findUnique({
@@ -99,16 +98,15 @@ export async function POST(
 // DELETE /api/integrations/todoist/tasks/[id]/complete - Mark task as incomplete and sync to Todoist
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id: taskId } = await params;
     const session = await auth();
 
     if (!session || !session.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
-    const taskId = params.id;
 
     // Get user from database
     const user = await prisma.user.findUnique({

@@ -68,7 +68,9 @@ async function diagnose() {
         console.log(`✅ ${user.email} has check-in for today:`);
         console.log(`   - Capacity Score: ${todayCheckIn.capacityScore}`);
         console.log(`   - Mode: ${todayCheckIn.mode}`);
-        console.log(`   - Available Hours: ${todayCheckIn.availableHours}`);
+        console.log(`   - Energy: ${todayCheckIn.energy}`);
+        console.log(`   - Sleep: ${todayCheckIn.sleep}`);
+        console.log(`   - Stress: ${todayCheckIn.stress}`);
       } else {
         console.log(`❌ ${user.email} has NO check-in for today`);
         console.log(`   → Go to /checkin to complete one`);

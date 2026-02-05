@@ -7,15 +7,14 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { auth } from '@/lib/auth';
 import {
   getCheckInSchedule,
   updateCheckInSchedule,
   scheduleCheckIn,
   type CheckInTrigger,
 } from '@/lib/intelligent-checkin';
-import { handleApiError } from '@/lib/api-error-handler';
+import { handleAPIError } from '@/lib/api-error-handler';
 
 /**
  * GET /api/checkin/schedule
@@ -23,9 +22,9 @@ import { handleApiError } from '@/lib/api-error-handler';
  */
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -33,7 +32,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(schedule);
   } catch (error) {
-    return handleApiError(error, 'Failed to get check-in schedule');
+    return handleAPIError(error, {
+      operation: 'GET /api/checkin/schedule',
+      userId: undefined
+    });
   }
 }
 
@@ -43,9 +45,9 @@ export async function GET(request: NextRequest) {
  */
 export async function PATCH(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -60,7 +62,10 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json(schedule);
   } catch (error) {
-    return handleApiError(error, 'Failed to update check-in schedule');
+    return handleAPIError(error, {
+      operation: 'PATCH /api/checkin/schedule',
+      userId: undefined
+    });
   }
 }
 
@@ -70,9 +75,9 @@ export async function PATCH(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -95,6 +100,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(notification);
   } catch (error) {
-    return handleApiError(error, 'Failed to schedule check-in');
+    return handleAPIError(error, {
+      operation: 'POST /api/checkin/schedule',
+      userId: undefined
+    });
   }
 }

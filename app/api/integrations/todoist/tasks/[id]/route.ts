@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { getTodoistClient } from '@/lib/todoist';
+import { TodoistClient } from '@/lib/todoist';
 
 // DELETE /api/integrations/todoist/tasks/[id] - Delete a task
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id: taskId } = await params;
     const session = await auth();
 
     if (!session || !session.user?.email) {
@@ -22,8 +23,6 @@ export async function DELETE(
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
-
-    const taskId = params.id;
 
     // Find the task in our database
     const task = await prisma.planTask.findUnique({
@@ -53,7 +52,7 @@ export async function DELETE(
         });
 
         if (todoistIntegration) {
-          const todoist = getTodoistClient(todoistIntegration.accessToken);
+          const todoist = new TodoistClient(todoistIntegration.accessToken);
           // Note: Todoist API v2 uses close task, not delete
           // We'll just remove from our system
         }

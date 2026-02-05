@@ -48,15 +48,15 @@ export default async function AnalyticsPage() {
     : 0;
 
   const avgEnergy = history.length > 0
-    ? (history.reduce((sum, h) => sum + h.energyLevel, 0) / history.length).toFixed(1)
+    ? (history.reduce((sum, h) => sum + h.energy, 0) / history.length).toFixed(1)
     : '0';
 
   const avgSleep = history.length > 0
-    ? (history.reduce((sum, h) => sum + h.sleepQuality, 0) / history.length).toFixed(1)
+    ? (history.reduce((sum, h) => sum + h.sleep, 0) / history.length).toFixed(1)
     : '0';
 
   const avgStress = history.length > 0
-    ? (history.reduce((sum, h) => sum + h.stressLevel, 0) / history.length).toFixed(1)
+    ? (history.reduce((sum, h) => sum + h.stress, 0) / history.length).toFixed(1)
     : '0';
 
   // Determine trend

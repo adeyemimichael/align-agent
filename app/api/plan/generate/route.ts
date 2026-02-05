@@ -155,6 +155,7 @@ export async function POST(request: NextRequest) {
           taskId: task.id,
           title: task.title,
           adjustedMinutes: task.estimatedMinutes,
+          originalMinutes: task.estimatedMinutes,
           scheduledStart: new Date(planDate.getTime() + (9 * 60 + index * 60) * 60000),
           scheduledEnd: new Date(planDate.getTime() + (9 * 60 + (index + 1) * 60) * 60000),
           reason: 'Fallback scheduling (AI unavailable)',
@@ -191,9 +192,10 @@ export async function POST(request: NextRequest) {
             return {
               externalId: t.taskId,
               title: t.title,
-              description: task?.description,
+              description: task?.description ?? undefined,
               priority: task?.priority || 3,
               estimatedMinutes: t.adjustedMinutes, // Use adjusted minutes with buffer
+              originalMinutes: task?.estimatedMinutes || t.adjustedMinutes, // Add originalMinutes
               scheduledStart: t.scheduledStart,
               scheduledEnd: t.scheduledEnd,
               skipRisk: t.skipRisk,
@@ -279,7 +281,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     return handleAPIError(error, {
       operation: 'POST /api/plan/generate',
-      userId: (await auth())?.user?.email,
+      userId: (await auth())?.user?.email ?? undefined,
     });
   }
 }

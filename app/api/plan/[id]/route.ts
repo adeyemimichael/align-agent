@@ -8,9 +8,10 @@ import { recordTaskCompletion } from '@/lib/time-tracking';
 // PATCH /api/plan/[id] - Update a plan (user adjustments)
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
 
     if (!session || !session.user?.email) {
@@ -31,7 +32,7 @@ export async function PATCH(
 
     // Verify plan belongs to user
     const plan = await prisma.dailyPlan.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: { tasks: true },
     });
 
@@ -84,7 +85,7 @@ export async function PATCH(
 
     // Get updated plan
     const updatedPlan = await prisma.dailyPlan.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         tasks: {
           orderBy: {

@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     return handleAPIError(error, {
       operation: 'GET /api/goals',
-      userId: (await auth())?.user?.email,
+      userId: (await auth())?.user?.email ?? undefined,
     });
   }
 }
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
         data: {
           userId: user.id,
           title,
-          description: description || null,
+          description: description ?? undefined,
           category,
           targetDate: targetDate ? new Date(targetDate) : null,
         },
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     return handleAPIError(error, {
       operation: 'POST /api/goals',
-      userId: (await auth())?.user?.email,
+      userId: (await auth())?.user?.email ?? undefined,
     });
   }
 }

@@ -14,9 +14,10 @@ const updateGoalSchema = z.object({
 // PATCH /api/goals/:id - Update a goal
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
 
     if (!session || !session.user?.email) {
@@ -45,7 +46,7 @@ export async function PATCH(
 
     // Check if goal exists and belongs to user
     const existingGoal = await prisma.goal.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!existingGoal) {
@@ -74,7 +75,7 @@ export async function PATCH(
     }
 
     const goal = await prisma.goal.update({
-      where: { id: params.id },
+      where: { id },
       data: updateData,
     });
 
@@ -91,9 +92,10 @@ export async function PATCH(
 // DELETE /api/goals/:id - Delete a goal
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await auth();
 
     if (!session || !session.user?.email) {
@@ -111,7 +113,7 @@ export async function DELETE(
 
     // Check if goal exists and belongs to user
     const existingGoal = await prisma.goal.findUnique({
-      where: { id: params.id },
+      where: { id },
     });
 
     if (!existingGoal) {
@@ -124,7 +126,7 @@ export async function DELETE(
 
     // Delete goal
     await prisma.goal.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json(

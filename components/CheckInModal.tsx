@@ -35,7 +35,7 @@ export default function CheckInModal({ checkIn, onRespond, onClose }: CheckInMod
     }
   };
 
-  const { message, context } = checkIn.message;
+  const message = checkIn.message;
   const taskRef = message.taskReference;
 
   return (
@@ -88,19 +88,19 @@ export default function CheckInModal({ checkIn, onRespond, onClose }: CheckInMod
             <div className="grid grid-cols-3 gap-3 text-center">
               <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
                 <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-                  {context.tasksCompleted}
+                  {message.context.tasksCompleted}
                 </div>
                 <div className="text-xs text-gray-600 dark:text-gray-400">Completed</div>
               </div>
               <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
                 <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                  {context.tasksRemaining}
+                  {message.context.tasksRemaining}
                 </div>
                 <div className="text-xs text-gray-600 dark:text-gray-400">Remaining</div>
               </div>
               <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
                 <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                  {context.minutesBehind > 0 ? `-${context.minutesBehind}` : '0'}
+                  {message.context.minutesBehind > 0 ? `-${message.context.minutesBehind}` : '0'}
                 </div>
                 <div className="text-xs text-gray-600 dark:text-gray-400">Min Behind</div>
               </div>
@@ -111,16 +111,16 @@ export default function CheckInModal({ checkIn, onRespond, onClose }: CheckInMod
               <span className="text-sm text-gray-600 dark:text-gray-400">Momentum:</span>
               <span
                 className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  context.momentumState === 'strong'
+                  message.context.momentumState === 'strong'
                     ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                    : context.momentumState === 'normal'
+                    : message.context.momentumState === 'normal'
                     ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                    : context.momentumState === 'weak'
+                    : message.context.momentumState === 'weak'
                     ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
                     : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
                 }`}
               >
-                {context.momentumState}
+                {message.context.momentumState}
               </span>
             </div>
 
@@ -134,7 +134,7 @@ export default function CheckInModal({ checkIn, onRespond, onClose }: CheckInMod
             {/* Response Options */}
             {!responding && !responseMessage && (
               <div className="space-y-2">
-                {message.responseOptions.map((option) => (
+                {message.responseOptions.map((option: { value: CheckInResponse; label: string; description: string }) => (
                   <button
                     key={option.value}
                     onClick={() => handleResponse(option.value)}

@@ -389,7 +389,7 @@ This implementation plan breaks down the adaptive productivity agent into discre
     - Track momentum metrics (morning start strength, completion-after-early-win rate)
     - _Requirements: 20.1, 20.2, 20.3, 20.4, 20.5_
 
-  - [ ] 23.2 Integrate momentum into scheduling decisions
+  - [x] 23.2 Integrate momentum into scheduling decisions
     - Boost predictions when momentum is strong
     - Trigger interventions when momentum collapses
     - Display momentum state to user
@@ -531,36 +531,36 @@ This implementation plan breaks down the adaptive productivity agent into discre
     - Store reasoning for adaptation
     - _Requirements: 19.8_
 
-  - [ ] 29.3 Create CheckInNotification model
+  - [x] 29.3 Create CheckInNotification model
     - Store check-in notifications sent
     - Track user responses
     - Store adaptive actions taken
     - _Requirements: 18_
 
-  - [ ] 29.4 Run database migration
+  - [x] 29.4 Run database migration
     - Create migration for new fields and models
     - Test migration on development database
     - _Requirements: 14-21_
 
 - [ ] 30. API Routes for Adaptive Features
-  - [ ] 30.1 Create progress tracking routes
+  - [x] 30.1 Create progress tracking routes
     - POST /api/progress/update - Update task progress
     - GET /api/progress/current - Get current progress
     - POST /api/progress/sync - Sync with task app
     - _Requirements: 14_
 
-  - [ ] 30.2 Create check-in routes
+  - [x] 30.2 Create check-in routes
     - POST /api/checkin/schedule - Schedule check-in notification
     - POST /api/checkin/respond - Handle check-in response
     - GET /api/checkin/pending - Get pending check-ins
     - _Requirements: 18_
 
-  - [ ] 30.3 Create re-scheduling routes
+  - [x] 30.3 Create re-scheduling routes
     - POST /api/plan/reschedule - Trigger mid-day re-schedule
     - GET /api/plan/adaptations - Get schedule adaptation history
     - _Requirements: 19_
 
-  - [ ] 30.4 Create momentum tracking routes
+  - [x] 30.4 Create momentum tracking routes
     - GET /api/momentum/current - Get current momentum state
     - GET /api/momentum/history - Get momentum history
     - _Requirements: 20_
@@ -590,38 +590,38 @@ This implementation plan breaks down the adaptive productivity agent into discre
     - Test task app sync
     - _Requirements: 18_
 
-- [ ] 32. UI Components for Adaptive Features
-  - [ ] 32.1 Create MomentumIndicator component
+- [x] 32. UI Components for Adaptive Features
+  - [x] 32.1 Create MomentumIndicator component
     - Display current momentum state
     - Show momentum trend
     - Display momentum metrics
     - _Requirements: 20.8_
 
-  - [ ] 32.2 Create SkipRiskWarning component
+  - [x] 32.2 Create SkipRiskWarning component
     - Display skip risk for tasks
     - Show intervention suggestions
     - _Requirements: 17.7_
 
-  - [ ] 32.3 Create ProgressTracker component
+  - [x] 32.3 Create ProgressTracker component
     - Show minutes ahead/behind schedule
     - Display completed vs planned tasks
     - Show real-time progress updates
     - _Requirements: 14_
 
-  - [ ] 32.4 Create CheckInModal component
+  - [x] 32.4 Create CheckInModal component
     - Display check-in message
     - Show response options
     - Handle user responses
     - _Requirements: 18_
 
-  - [ ] 32.5 Create RescheduleProposal component
+  - [x] 32.5 Create RescheduleProposal component
     - Display re-schedule reasoning
     - Show before/after comparison
     - Allow accept/reject actions
     - _Requirements: 19_
 
-- [ ] 33. Final Integration and Testing
-  - [ ] 33.1 End-to-end testing of adaptive features
+- [-] 33. Final Integration and Testing
+  - [x] 33.1 End-to-end testing of adaptive features
     - Test complete adaptive flow (check-in → progress → re-schedule)
     - Test momentum tracking across day
     - Test skip risk interventions

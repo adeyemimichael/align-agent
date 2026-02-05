@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     return handleAPIError(error, {
       operation: 'POST /api/checkin',
-      userId: (await auth())?.user?.email,
+      userId: (await auth())?.user?.email ?? undefined,
     });
   }
 }

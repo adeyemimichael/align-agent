@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { auth } from '@/lib/auth';
 import { getProgressHistory } from '@/lib/progress-tracker';
 import { handleAPIError } from '@/lib/api-error-handler';
 import { prisma } from '@/lib/prisma';
@@ -11,7 +10,7 @@ import { prisma } from '@/lib/prisma';
  */
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -36,6 +35,9 @@ export async function GET(request: NextRequest) {
       days,
     });
   } catch (error) {
-    return handleAPIError(error, 'Failed to get progress history');
+    return handleAPIError(error, {
+      operation: 'GET /api/progress/history',
+      userId: undefined
+    });
   }
 }
