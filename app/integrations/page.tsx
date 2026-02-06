@@ -1,29 +1,64 @@
-import { auth } from '@/lib/auth';
-import { redirect } from 'next/navigation';
-import { prisma } from '@/lib/prisma';
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import { CheckCircle2, XCircle, Calendar, CheckSquare, BarChart3, Zap } from 'lucide-react';
 import Link from 'next/link';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
-export const runtime = 'nodejs';
+interface Integration {
+  platform: string;
+}
 
-export default async function IntegrationsPage() {
-  const session = await auth();
+interface User {
+  integrations: Integration[];
+  checkIns: Array<{ capacityScore: number }>;
+}
 
-  if (!session || !session.user?.email) {
-    redirect('/login');
+export default function IntegrationsPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login');
+      return;
+    }
+
+    if (status === 'authenticated') {
+      fetchUserData();
+    }
+  }, [status, router]);
+
+  const fetchUserData = async () => {
+    try {
+      const response = await fetch('/api/user/integrations');
+      if (response.ok) {
+        const data = await response.json();
+        setUser(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch user data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading || status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    );
   }
 
-  const user = await prisma.user.findUnique({
-    where: { email: session.user.email },
-    include: {
-      integrations: true,
-      checkIns: {
-        orderBy: { date: 'desc' },
-        take: 1,
-      },
-    },
-  });
+  if (!session) {
+    return null;
+  }
 
   const todoistIntegration = user?.integrations.find((i) => i.platform === 'todoist');
   const calendarIntegration = user?.integrations.find((i) => i.platform === 'google_calendar');
