@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { User, Shield, Palette } from 'lucide-react';
 import NotificationSettings from './NotificationSettings';
 
@@ -14,17 +14,25 @@ interface SettingsClientProps {
 export default function SettingsClient({ user }: SettingsClientProps) {
   const [darkMode, setDarkMode] = useState(false);
 
+  // Load dark mode preference on mount
+  useEffect(() => {
+    const savedMode = localStorage.getItem('darkMode') === 'true';
+    setDarkMode(savedMode);
+    if (savedMode) {
+      document.documentElement.classList.add('dark');
+    }
+  }, []);
+
   const handleDarkModeToggle = () => {
     const newValue = !darkMode;
     setDarkMode(newValue);
+    localStorage.setItem('darkMode', String(newValue));
     
     // Apply dark mode to document
     if (newValue) {
       document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
     } else {
       document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
     }
   };
 

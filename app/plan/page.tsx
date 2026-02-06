@@ -21,6 +21,7 @@ import {
 
 interface Task {
   id: string;
+  externalId?: string; // Todoist task ID
   title: string;
   description?: string;
   priority: number;
@@ -32,6 +33,12 @@ interface Task {
   skipRisk?: 'low' | 'medium' | 'high';
   skipRiskPercentage?: number;
   momentumState?: string;
+}
+
+interface Goal {
+  id: string;
+  title: string;
+  category: string;
 }
 
 interface Plan {
@@ -46,13 +53,40 @@ interface Plan {
 export default function PlanPage() {
   const router = useRouter();
   const [plan, setPlan] = useState<Plan | null>(null);
+  const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     fetchCurrentPlan();
+    fetchGoals();
+    // Auto-sync Todoist tasks on page load
+    autoSyncTodoist();
   }, []);
+
+  const autoSyncTodoist = async () => {
+    try {
+      // Silently sync in background without showing loading state
+      await fetch('/api/integrations/todoist/tasks');
+    } catch (err) {
+      // Fail silently - user can manually sync if needed
+      console.error('Auto-sync failed:', err);
+    }
+  };
+
+  const fetchGoals = async () => {
+    try {
+      const response = await fetch('/api/goals');
+      if (response.ok) {
+        const data = await response.json();
+        setGoals(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch goals:', err);
+    }
+  };
 
   const fetchCurrentPlan = async () => {
     try {
@@ -107,10 +141,44 @@ export default function PlanPage() {
     }
   };
 
+  const syncTodoistTasks = async () => {
+    try {
+      setSyncing(true);
+      const response = await fetch('/api/integrations/todoist/tasks');
+      
+      if (response.ok) {
+        // Refresh the current plan to show updated tasks
+        await fetchCurrentPlan();
+      } else {
+        const data = await response.json();
+        setError(data.error || 'Failed to sync Todoist tasks');
+      }
+    } catch (err) {
+      setError('Failed to sync Todoist tasks');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const toggleTaskCompletion = async (taskId: string, completed: boolean) => {
     if (!plan) return;
 
     try {
+      // If marking as complete and task has externalId (Todoist task), sync to Todoist
+      const task = plan.tasks.find(t => t.id === taskId);
+      if (completed && task?.externalId) {
+        // Mark complete in Todoist
+        const todoistResponse = await fetch(`/api/integrations/todoist/tasks/${task.externalId}/complete`, {
+          method: 'POST',
+        });
+        
+        if (!todoistResponse.ok) {
+          console.error('Failed to sync completion to Todoist');
+          // Continue anyway to update local state
+        }
+      }
+
+      // Update local plan
       const response = await fetch(`/api/plan/${plan.id}`, {
         method: 'PATCH',
         headers: {
@@ -152,6 +220,29 @@ export default function PlanPage() {
     } catch (err) {
       console.error('Failed to delete task:', err);
       alert('Failed to delete task');
+    }
+  };
+
+  const linkTaskToGoal = async (taskId: string, goalId: string | null) => {
+    if (!plan) return;
+
+    try {
+      const response = await fetch(`/api/plan/${plan.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tasks: [{ id: taskId, goalId }],
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setPlan(data.plan);
+      }
+    } catch (err) {
+      console.error('Failed to link task to goal:', err);
     }
   };
 
@@ -307,20 +398,42 @@ export default function PlanPage() {
                     </span>
                   </div>
                 </div>
-                <button
-                  onClick={generatePlan}
-                  disabled={generating}
-                  className="px-4 py-2 text-sm font-medium text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {generating ? (
-                    <span className="flex items-center gap-2">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Regenerating...
-                    </span>
-                  ) : (
-                    'Regenerate'
-                  )}
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={syncTodoistTasks}
+                    disabled={syncing}
+                    className="px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    title="Sync latest tasks from Todoist"
+                  >
+                    {syncing ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Syncing...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Sync Todoist
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={generatePlan}
+                    disabled={generating}
+                    className="px-4 py-2 text-sm font-medium text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {generating ? (
+                      <span className="flex items-center gap-2">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Regenerating...
+                      </span>
+                    ) : (
+                      'Regenerate'
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -423,6 +536,22 @@ export default function PlanPage() {
                             </div>
                           )}
                           <span>{task.estimatedMinutes} min</span>
+                          {/* Goal Selector */}
+                          {goals.length > 0 && (
+                            <select
+                              value={task.goalId || ''}
+                              onChange={(e) => linkTaskToGoal(task.id, e.target.value || null)}
+                              className="text-xs px-2 py-1 border border-gray-300 rounded bg-white hover:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <option value="">No goal</option>
+                              {goals.map((goal) => (
+                                <option key={goal.id} value={goal.id}>
+                                  🎯 {goal.title}
+                                </option>
+                              ))}
+                            </select>
+                          )}
                         </div>
                         {/* Skip Risk Badge */}
                         {task.skipRisk && task.skipRiskPercentage && (

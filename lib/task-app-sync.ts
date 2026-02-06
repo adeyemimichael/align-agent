@@ -57,7 +57,16 @@ export async function syncTaskAppProgress(
   });
 
   if (!integration) {
-    throw new Error('Todoist integration not found for user');
+    // Return empty result if Todoist is not connected
+    return {
+      syncedAt: new Date(),
+      tasksChecked: 0,
+      completionsDetected: 0,
+      unplannedCompletions: 0,
+      newTasksDetected: 0,
+      momentumUpdated: false,
+      changes: [],
+    };
   }
 
   // Get current plan
@@ -85,12 +94,37 @@ export async function syncTaskAppProgress(
       });
 
   if (!plan) {
-    throw new Error('No plan found for today');
+    // Return empty result if no plan exists
+    return {
+      syncedAt: new Date(),
+      tasksChecked: 0,
+      completionsDetected: 0,
+      unplannedCompletions: 0,
+      newTasksDetected: 0,
+      momentumUpdated: false,
+      changes: [],
+    };
   }
 
   // Fetch tasks from Todoist
   const todoistClient = new TodoistClient(integration.accessToken);
-  const todoistTasks = await todoistClient.getTasks();
+  let todoistTasks;
+  
+  try {
+    todoistTasks = await todoistClient.getTasks();
+  } catch (apiError) {
+    console.error('[Sync] Todoist API error:', apiError);
+    // Return empty result if API call fails
+    return {
+      syncedAt: new Date(),
+      tasksChecked: 0,
+      completionsDetected: 0,
+      unplannedCompletions: 0,
+      newTasksDetected: 0,
+      momentumUpdated: false,
+      changes: [],
+    };
+  }
 
   const changes: SyncChange[] = [];
   let completionsDetected = 0;

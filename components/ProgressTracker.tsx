@@ -96,13 +96,19 @@ export function ProgressTracker({
       const data = await response.json();
       setLastSynced(new Date());
 
+      // Show message if Todoist is not connected
+      if (!data.hasIntegration) {
+        console.log('Todoist not connected - sync skipped');
+      }
+
       // Refresh progress after sync
       await fetchProgress();
 
       return data;
     } catch (err) {
       console.error('Sync error:', err);
-      setError(err instanceof Error ? err.message : 'Sync failed');
+      // Don't set error state for sync failures - it's not critical
+      console.log('Sync failed, but continuing with cached data');
     }
   };
 

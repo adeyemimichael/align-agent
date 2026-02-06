@@ -35,6 +35,7 @@ export default function Sidebar({ user, capacityScore }: SidebarProps) {
     { name: 'Progress', href: '/progress', icon: Activity },
     { name: 'Analytics', href: '/analytics', icon: TrendingUp },
     { name: 'Goals', href: '/goals', icon: Target },
+    { name: 'AI Performance', href: '/opik', icon: Sparkles, badge: 'Opik' },
     { name: 'Integrations', href: '/integrations', icon: Plug },
     { name: 'Settings', href: '/settings', icon: Settings },
   ];

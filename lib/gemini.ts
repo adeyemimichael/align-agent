@@ -1,8 +1,38 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { logAIRequest, trackReasoningQuality } from './opik';
+import { GoogleGenAI } from '@google/genai';
 import { AIServiceError } from './errors';
 import type { MomentumState } from './momentum-tracker';
 import type { SkipRiskLevel } from './skip-risk';
+
+// Dynamic imports for Opik to avoid build issues
+let trackGemini: any = null;
+let getOpikClient: any = null;
+let logAIRequest: any = null;
+let trackReasoningQuality: any = null;
+
+async function loadOpikFunctions() {
+  if (!getOpikClient) {
+    try {
+      const opikModule = await import('./opik');
+      getOpikClient = opikModule.getOpikClient;
+      logAIRequest = opikModule.logAIRequest;
+      trackReasoningQuality = opikModule.trackReasoningQuality;
+    } catch (error) {
+      console.warn('Opik module not available:', error);
+    }
+  }
+}
+
+async function loadTrackGemini() {
+  if (!trackGemini) {
+    try {
+      const opikGeminiModule = await import('opik-gemini');
+      trackGemini = opikGeminiModule.trackGemini;
+    } catch (error) {
+      console.warn('opik-gemini module not available:', error);
+    }
+  }
+  return trackGemini;
+}
 
 export interface PlanningContext {
   capacityScore: number;
@@ -87,19 +117,61 @@ export interface PlanningResponse {
 }
 
 /**
- * Gemini AI client for intelligent planning
+ * Gemini AI client for intelligent planning with Opik tracking
  */
 export class GeminiClient {
-  private genAI: GoogleGenerativeAI;
+  private genAI: any; // Tracked Gemini client
   private model: any;
+  private isTracked: boolean = false;
 
   constructor(apiKey?: string) {
     const key = apiKey || process.env.GEMINI_API_KEY;
     if (!key) {
       throw new AIServiceError('GEMINI_API_KEY not configured');
     }
-    this.genAI = new GoogleGenerativeAI(key);
-    this.model = this.genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+
+    // Initialize Google GenAI client
+    const originalGenAI = new GoogleGenAI({
+      apiKey: key,
+    });
+
+    // Store original client (will be wrapped with tracking in async init)
+    this.genAI = originalGenAI;
+    this.model = this.genAI.models;
+
+    // Initialize tracking asynchronously
+    this.initializeTracking();
+  }
+
+  /**
+   * Initialize Opik tracking (async)
+   */
+  private async initializeTracking() {
+    try {
+      await loadOpikFunctions();
+      const opikClient = getOpikClient ? await getOpikClient() : null;
+      const trackGeminiFunc = await loadTrackGemini();
+
+      if (opikClient && trackGeminiFunc) {
+        this.genAI = trackGeminiFunc(this.genAI, {
+          client: opikClient,
+          traceMetadata: {
+            tags: ['adaptive-productivity-agent', 'gemini', 'production'],
+            environment: process.env.NODE_ENV || 'development',
+            version: '1.0.0',
+            component: 'ai-planning',
+          },
+          generationName: 'AdaptiveProductivityAgent',
+        });
+        this.model = this.genAI.models;
+        this.isTracked = true;
+        console.log('✅ Gemini client wrapped with Opik tracking');
+      } else {
+        console.warn('⚠️ Opik tracking disabled - OPIK_API_KEY not set or opik-gemini not available');
+      }
+    } catch (error) {
+      console.warn('Failed to initialize Opik tracking:', error);
+    }
   }
 
   /**
@@ -114,15 +186,17 @@ export class GeminiClient {
     const startTimestamp = Date.now();
 
     try {
-      const result = await this.model.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text();
+      const result = await this.model.generateContent({
+        model: 'gemini-2.0-flash-001',
+        contents: prompt,
+      });
+      const text = result.text;
       const duration = Date.now() - startTimestamp;
 
       const planningResponse = this.parsePlanningResponse(text, context.tasks, startTime);
 
       // Track AI request in Opik (if userId provided)
-      if (userId) {
+      if (userId && logAIRequest) {
         await logAIRequest({
           userId,
           capacityScore: context.capacityScore,
@@ -133,15 +207,20 @@ export class GeminiClient {
           reasoning: planningResponse.overallReasoning,
           duration,
           timestamp: new Date(),
-        }).catch((err) => console.error('Opik logging failed:', err));
+        }).catch((err: any) => console.error('Opik logging failed:', err));
 
         // Track reasoning quality
-        await trackReasoningQuality({
-          userId,
-          reasoning: planningResponse.overallReasoning,
-          taskCount: context.tasks.length,
-        }).catch((err) => console.error('Opik reasoning tracking failed:', err));
+        if (trackReasoningQuality) {
+          await trackReasoningQuality({
+            userId,
+            reasoning: planningResponse.overallReasoning,
+            taskCount: context.tasks.length,
+          }).catch((err: any) => console.error('Opik reasoning tracking failed:', err));
+        }
       }
+
+      // Flush Opik traces
+      await this.genAI.flush?.();
 
       return planningResponse;
     } catch (error) {
@@ -649,6 +728,7 @@ ${adaptiveContextText}
 5. Decide which tasks to schedule today (don't overcommit)
 6. Consider task dependencies and due dates
 7. Provide clear reasoning for each decision, referencing adaptive data
+8. **CRITICAL**: ONLY use task IDs from the provided task list - DO NOT invent or hallucinate task IDs
 
 **RULES:**
 - Total scheduled time must NOT exceed ${availableMinutes} minutes
@@ -659,6 +739,7 @@ ${adaptiveContextText}
 - If momentum is COLLAPSED, schedule only 1-2 achievable wins
 - If skip risk is HIGH, consider deferring or simplifying tasks
 - Avoid scheduling demanding tasks during low productivity hours
+- **CRITICAL**: You MUST ONLY schedule tasks from the provided list - DO NOT create new tasks or use task IDs not in the list
 
 **OUTPUT FORMAT (JSON):**
 {
@@ -684,9 +765,11 @@ ${adaptiveContextText}
 Generate the schedule now:`;
 
     try {
-      const result = await this.model.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text();
+      const result = await this.model.generateContent({
+        model: 'gemini-2.0-flash-001',
+        contents: prompt,
+      });
+      const text = result.text;
 
       // Parse AI response
       const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -718,6 +801,9 @@ Generate the schedule now:`;
         (sum: number, t: any) => sum + t.adjustedMinutes,
         0
       );
+
+      // Flush Opik traces
+      await this.genAI.flush?.();
 
       return {
         scheduledTasks,
@@ -796,9 +882,16 @@ Recent history: ${historyText}
 Provide 2-3 sentences of insight about their capacity trend and any recommendations.`;
 
     try {
-      const result = await this.model.generateContent(prompt);
-      const response = await result.response;
-      return response.text();
+      const result = await this.model.generateContent({
+        model: 'gemini-2.0-flash-001',
+        contents: prompt,
+      });
+      const text = result.text;
+      
+      // Flush Opik traces
+      await this.genAI.flush?.();
+      
+      return text;
     } catch (error) {
       console.error('Gemini insights error:', error);
       return 'Unable to generate insights at this time.';
@@ -872,9 +965,11 @@ Provide 2-3 sentences of insight about their capacity trend and any recommendati
 Generate the notification now:`;
 
     try {
-      const result = await this.model.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text();
+      const result = await this.model.generateContent({
+        model: 'gemini-2.0-flash-001',
+        contents: prompt,
+      });
+      const text = result.text;
 
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
@@ -882,6 +977,9 @@ Generate the notification now:`;
       }
 
       const parsed = JSON.parse(jsonMatch[0]);
+
+      // Flush Opik traces
+      await this.genAI.flush?.();
 
       return {
         title: parsed.title,
@@ -995,9 +1093,11 @@ ${tasksText}
 Generate the recommendation now:`;
 
     try {
-      const result = await this.model.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text();
+      const result = await this.model.generateContent({
+        model: 'gemini-2.0-flash-001',
+        contents: prompt,
+      });
+      const text = result.text;
 
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
@@ -1005,6 +1105,9 @@ Generate the recommendation now:`;
       }
 
       const parsed = JSON.parse(jsonMatch[0]);
+
+      // Flush Opik traces
+      await this.genAI.flush?.();
 
       return {
         shouldReschedule: parsed.shouldReschedule,
@@ -1057,9 +1160,16 @@ Generate the recommendation now:`;
 Generate a brief, user-friendly explanation (2-3 sentences) of why this task has this risk level and what it means.`;
 
     try {
-      const result = await this.model.generateContent(prompt);
-      const response = await result.response;
-      return response.text();
+      const result = await this.model.generateContent({
+        model: 'gemini-2.0-flash-001',
+        contents: prompt,
+      });
+      const text = result.text;
+      
+      // Flush Opik traces
+      await this.genAI.flush?.();
+      
+      return text;
     } catch (error) {
       console.error('AI skip risk explanation error:', error);
       return `This task has ${riskLevel} skip risk (${riskPercentage}%) based on your current progress and patterns.`;
@@ -1088,9 +1198,16 @@ Generate a brief, user-friendly explanation (2-3 sentences) of why this task has
 Generate a brief, supportive explanation (2-3 sentences) that helps the user understand their momentum state and why the system is making this recommendation.`;
 
     try {
-      const result = await this.model.generateContent(prompt);
-      const response = await result.response;
-      return response.text();
+      const result = await this.model.generateContent({
+        model: 'gemini-2.0-flash-001',
+        contents: prompt,
+      });
+      const text = result.text;
+      
+      // Flush Opik traces
+      await this.genAI.flush?.();
+      
+      return text;
     } catch (error) {
       console.error('AI momentum explanation error:', error);
       return `Your momentum is ${momentumState}. ${recommendedAction}`;

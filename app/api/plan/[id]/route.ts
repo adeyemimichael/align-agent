@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { updateCalendarEvent } from '@/lib/calendar-sync';
-import { trackCapacityAccuracy } from '@/lib/opik';
 import { recordTaskCompletion } from '@/lib/time-tracking';
 
 // PATCH /api/plan/[id] - Update a plan (user adjustments)

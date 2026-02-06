@@ -39,12 +39,25 @@ export async function GET(request: NextRequest) {
       throw new NotFoundError('User');
     }
 
+    // Check if includeTasks query param is set
+    const { searchParams } = new URL(request.url);
+    const includeTasks = searchParams.get('includeTasks') === 'true';
+
     // Get all goals for the user
     let goals;
     try {
       goals = await prisma.goal.findMany({
         where: { userId: user.id },
         orderBy: { createdAt: 'desc' },
+        include: includeTasks ? {
+          tasks: {
+            select: {
+              id: true,
+              title: true,
+              completed: true,
+            },
+          },
+        } : undefined,
       });
     } catch (dbError) {
       throw new DatabaseError('Failed to fetch goals', dbError);

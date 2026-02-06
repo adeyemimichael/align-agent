@@ -241,9 +241,24 @@ export async function autoScheduleTasks(
     scheduleDate,
   });
 
-  // Step 5: Calculate skip risk for scheduled tasks
+  // Step 5: Validate AI didn't hallucinate tasks (phantom task prevention)
+  const validTaskIds = new Set(adjustedTasks.map(t => t.id));
+  const validatedScheduledTasks = aiSchedule.scheduledTasks.filter(st => {
+    if (!validTaskIds.has(st.taskId)) {
+      console.warn(`[PHANTOM TASK DETECTED] AI tried to schedule non-existent task: ${st.taskId} - "${st.title}"`);
+      return false;
+    }
+    return true;
+  });
+  
+  if (validatedScheduledTasks.length < aiSchedule.scheduledTasks.length) {
+    const phantomCount = aiSchedule.scheduledTasks.length - validatedScheduledTasks.length;
+    console.warn(`[PHANTOM TASKS] Filtered out ${phantomCount} hallucinated task(s)`);
+  }
+  
+  // Step 6: Calculate skip risk for validated scheduled tasks
   const { tasksWithRisk, interventions } = calculateSkipRiskForTasks(
-    aiSchedule.scheduledTasks,
+    validatedScheduledTasks,
     {
       completedTasks: currentProgress?.completedTasks || 0,
       skippedTasks: currentProgress?.skippedTasks || 0,
@@ -252,7 +267,7 @@ export async function autoScheduleTasks(
     }
   );
   
-  // Step 6: Add momentum-specific interventions
+  // Step 7: Add momentum-specific interventions
   const allInterventions = [...interventions];
   
   if (needsMomentumIntervention) {

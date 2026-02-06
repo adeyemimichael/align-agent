@@ -33,15 +33,37 @@ export async function GET(request: NextRequest) {
 
     if (!integration) {
       return NextResponse.json(
-        { error: 'Todoist not connected' },
-        { status: 404 }
+        { 
+          error: 'Todoist not connected',
+          message: 'Please connect your Todoist account in the Integrations page',
+          tasks: [],
+          count: 0
+        },
+        { status: 200 } // Changed to 200 to avoid error state in UI
       );
     }
 
     // Fetch tasks from Todoist
     const todoistClient = new TodoistClient(integration.accessToken);
-    const tasks = await todoistClient.getTasks();
-    const projects = await todoistClient.getProjects();
+    
+    let tasks: any[];
+    let projects: any[];
+    
+    try {
+      tasks = await todoistClient.getTasks();
+      projects = await todoistClient.getProjects();
+    } catch (apiError) {
+      console.error('Todoist API error:', apiError);
+      return NextResponse.json(
+        { 
+          error: 'Failed to fetch from Todoist',
+          message: 'Unable to connect to Todoist. Please check your connection and try again.',
+          tasks: [],
+          count: 0
+        },
+        { status: 200 } // Return 200 to avoid error state in UI
+      );
+    }
 
     // Create a map of project IDs to names
     const projectMap = new Map(projects.map(p => [p.id, p.name]));

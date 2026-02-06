@@ -15,6 +15,14 @@ interface Goal {
   category: 'work' | 'health' | 'personal';
   targetDate: string | null;
   createdAt: string;
+  _count?: {
+    tasks: number;
+  };
+  tasks?: Array<{
+    id: string;
+    title: string;
+    completed: boolean;
+  }>;
 }
 
 export default function GoalsPage() {
@@ -31,7 +39,7 @@ export default function GoalsPage() {
 
   const fetchGoals = async () => {
     try {
-      const response = await fetch('/api/goals');
+      const response = await fetch('/api/goals?includeTasks=true');
       if (!response.ok) {
         throw new Error('Failed to fetch goals');
       }
@@ -128,6 +136,23 @@ export default function GoalsPage() {
       default:
         return <Target className="w-5 h-5" />;
     }
+  };
+
+  const calculateProgress = (goal: Goal) => {
+    if (!goal.tasks || goal.tasks.length === 0) {
+      return { percentage: 0, completed: 0, total: 0 };
+    }
+    const completed = goal.tasks.filter(t => t.completed).length;
+    const total = goal.tasks.length;
+    const percentage = Math.round((completed / total) * 100);
+    return { percentage, completed, total };
+  };
+
+  const getProgressColor = (percentage: number) => {
+    if (percentage >= 75) return 'bg-green-500';
+    if (percentage >= 50) return 'bg-yellow-500';
+    if (percentage >= 25) return 'bg-orange-500';
+    return 'bg-red-500';
   };
 
   if (isLoading) {
@@ -267,6 +292,25 @@ export default function GoalsPage() {
                           day: 'numeric',
                           year: 'numeric'
                         })}
+                      </div>
+                    )}
+                    {/* Progress Tracking */}
+                    {goal.tasks && goal.tasks.length > 0 && (
+                      <div className="ml-12 mt-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-gray-700">
+                            Progress: {calculateProgress(goal).completed} / {calculateProgress(goal).total} tasks
+                          </span>
+                          <span className="text-sm font-semibold text-gray-900">
+                            {calculateProgress(goal).percentage}%
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2.5">
+                          <div
+                            className={`h-2.5 rounded-full transition-all duration-500 ${getProgressColor(calculateProgress(goal).percentage)}`}
+                            style={{ width: `${calculateProgress(goal).percentage}%` }}
+                          ></div>
+                        </div>
                       </div>
                     )}
                   </div>

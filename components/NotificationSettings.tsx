@@ -323,14 +323,23 @@ export default function NotificationSettings() {
                     <p className="text-sm font-medium text-gray-900">
                       Email Notifications
                     </p>
-                    <p className="text-xs text-gray-600">Coming soon</p>
+                    <p className="text-xs text-gray-600">
+                      Fallback when browser notifications fail
+                    </p>
                   </div>
                 </div>
                 <button
-                  disabled={true}
-                  className="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-200 opacity-50 cursor-not-allowed"
+                  onClick={handleToggleEmailNotifications}
+                  disabled={saving}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    preferences.channels.email ? 'bg-emerald-600' : 'bg-gray-200'
+                  } ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                  <span className="inline-block h-4 w-4 transform rounded-full bg-white translate-x-1" />
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      preferences.channels.email ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
                 </button>
               </div>
             </div>

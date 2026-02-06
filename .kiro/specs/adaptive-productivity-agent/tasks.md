@@ -327,8 +327,8 @@ This implementation plan breaks down the adaptive productivity agent into discre
     - Send push notifications
     - _Requirements: 14.5_
 
-  - [ ] 19.4 Implement email notifications
-    - Set up email service (e.g., SendGrid)
+  - [x] 19.4 Implement email notifications
+    - Set up email service (Resend)
     - Create email templates
     - Send fallback email notifications
     - _Requirements: 14.6_

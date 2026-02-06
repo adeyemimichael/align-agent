@@ -178,6 +178,14 @@ export async function POST(request: NextRequest) {
     // AI reasoning is already included in autoScheduleResult
     const combinedReasoning = autoScheduleResult.reasoning;
 
+    // Delete existing plan for today if it exists
+    await prisma.dailyPlan.deleteMany({
+      where: {
+        userId: user.id,
+        date: planDate,
+      },
+    });
+
     // Save plan to database using auto-scheduler results
     const plan = await prisma.dailyPlan.create({
       data: {
@@ -191,11 +199,10 @@ export async function POST(request: NextRequest) {
             const task = tasks.find((task) => task.id === t.taskId);
             return {
               externalId: t.taskId,
-              title: t.title,
+              title: t.title || task?.title || 'Untitled Task', // Ensure title is never undefined
               description: task?.description ?? undefined,
               priority: task?.priority || 3,
               estimatedMinutes: t.adjustedMinutes, // Use adjusted minutes with buffer
-              originalMinutes: task?.estimatedMinutes || t.adjustedMinutes, // Add originalMinutes
               scheduledStart: t.scheduledStart,
               scheduledEnd: t.scheduledEnd,
               skipRisk: t.skipRisk,

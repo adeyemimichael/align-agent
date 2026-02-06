@@ -24,7 +24,7 @@ export async function GET() {
     // Return preferences or defaults
     const preferences = user.notificationPreferences || DEFAULT_NOTIFICATION_PREFERENCES;
 
-    return NextResponse.json({ preferences });
+    return NextResponse.json({ preferences, userId: user.id });
   } catch (error) {
     console.error('Get notification preferences error:', error);
     return NextResponse.json(

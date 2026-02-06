@@ -31,8 +31,15 @@ export async function POST(request: NextRequest) {
     // Sync with task app
     const syncResult = await syncTaskAppProgress(user.id, planId);
 
+    // Check if sync actually happened
+    const hasIntegration = syncResult.tasksChecked > 0 || syncResult.changes.length > 0;
+
     return NextResponse.json({
       success: true,
+      hasIntegration,
+      message: hasIntegration 
+        ? 'Sync completed successfully' 
+        : 'No Todoist integration found or no active plan',
       ...syncResult,
     });
   } catch (error) {

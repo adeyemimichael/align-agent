@@ -1,18 +1,35 @@
 /**
  * Opik Tracking Integration
- * Tracks AI model performance and decisions for demo purposes
+ * Tracks AI model performance and decisions for hackathon demo
  * Requirements: 13.1, 13.2, 13.3
+ * 
+ * All AI tracking is sent to Opik platform workspace for monitoring.
+ * View your traces at: https://www.comet.com/opik
  */
 
-import { Opik } from 'opik';
+let Opik: any = null;
+let opikClient: any = null;
 
-let opikClient: Opik | null = null;
+/**
+ * Dynamically load Opik to avoid build issues
+ */
+async function loadOpik() {
+  if (!Opik) {
+    try {
+      const opikModule = await import('opik');
+      Opik = opikModule.Opik;
+    } catch (error) {
+      console.warn('Opik module not available:', error);
+    }
+  }
+  return Opik;
+}
 
 /**
  * Initialize Opik client
  * Requirements: 13.1
  */
-export function getOpikClient(): Opik | null {
+export async function getOpikClient(): Promise<any | null> {
   // Only initialize if API key is provided
   if (!process.env.OPIK_API_KEY) {
     console.warn('OPIK_API_KEY not set - tracking disabled');
@@ -21,11 +38,14 @@ export function getOpikClient(): Opik | null {
 
   if (!opikClient) {
     try {
-      opikClient = new Opik({
+      const OpikClass = await loadOpik();
+      if (!OpikClass) return null;
+      
+      opikClient = new OpikClass({
         apiKey: process.env.OPIK_API_KEY,
-        projectName: process.env.OPIK_PROJECT_NAME || 'adaptive-productivity-agent',
+        projectName: process.env.OPIK_WORKSPACE || 'adaptive-productivity-agent',
       });
-      console.log('Opik client initialized successfully');
+      console.log('✅ Opik client initialized - traces will be sent to Opik platform');
     } catch (error) {
       console.error('Failed to initialize Opik client:', error);
       return null;
@@ -38,6 +58,9 @@ export function getOpikClient(): Opik | null {
 /**
  * Log Gemini AI request and response
  * Requirements: 13.1, 13.2
+ * 
+ * NOTE: This is now handled automatically by trackGemini wrapper in gemini.ts
+ * This function is kept for backward compatibility and manual logging
  */
 export async function logAIRequest(data: {
   userId: string;
@@ -68,7 +91,7 @@ export async function logAIRequest(data: {
         reasoning: data.reasoning,
       },
       metadata: {
-        model: 'gemini-2.5-flash',
+        model: 'gemini-2.0-flash-001',
         duration_ms: data.duration,
         timestamp: data.timestamp.toISOString(),
       },
@@ -78,7 +101,7 @@ export async function logAIRequest(data: {
     trace.end();
     await client.flush();
 
-    console.log('AI request logged to Opik');
+    console.log('✅ AI request logged to Opik platform');
   } catch (error) {
     console.error('Failed to log AI request to Opik:', error);
   }
@@ -126,7 +149,7 @@ export async function trackCapacityAccuracy(data: {
     trace.end();
     await client.flush();
 
-    console.log('Capacity accuracy tracked in Opik');
+    console.log('✅ Capacity accuracy tracked in Opik platform');
   } catch (error) {
     console.error('Failed to track capacity accuracy in Opik:', error);
   }
@@ -171,7 +194,7 @@ export async function trackReasoningQuality(data: {
     trace.end();
     await client.flush();
 
-    console.log('Reasoning quality tracked in Opik');
+    console.log('✅ Reasoning quality tracked in Opik platform');
   } catch (error) {
     console.error('Failed to track reasoning quality in Opik:', error);
   }
@@ -200,9 +223,8 @@ function calculateReasoningQuality(reasoning: string): number {
  * Requirements: 13.4
  */
 export function getOpikDashboardUrl(): string {
-  const projectName =
-    process.env.OPIK_PROJECT_NAME || 'adaptive-productivity-agent';
-  return `https://www.comet.com/opik/projects/${projectName}`;
+  const workspace = process.env.OPIK_WORKSPACE || 'adaptive-productivity-agent';
+  return `https://www.comet.com/opik/projects/${workspace}`;
 }
 
 /**

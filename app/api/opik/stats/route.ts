@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { getOpikDashboardUrl } from '@/lib/opik';
 
 // GET /api/opik/stats - Get Opik tracking statistics
 export async function GET(request: NextRequest) {
@@ -61,7 +60,8 @@ export async function GET(request: NextRequest) {
     );
 
     // Get Opik dashboard URL
-    const opikDashboardUrl = getOpikDashboardUrl();
+    const workspace = process.env.OPIK_WORKSPACE || 'adaptive-productivity-agent';
+    const opikDashboardUrl = `https://www.comet.com/opik/projects/${workspace}`;
 
     return NextResponse.json({
       stats: {
