@@ -73,7 +73,7 @@ export async function logAIRequest(data: {
   duration: number;
   timestamp: Date;
 }): Promise<void> {
-  const client = getOpikClient();
+  const client = await getOpikClient();
   if (!client) return;
 
   try {
@@ -118,7 +118,7 @@ export async function trackCapacityAccuracy(data: {
   date: Date;
   mode: string;
 }): Promise<void> {
-  const client = getOpikClient();
+  const client = await getOpikClient();
   if (!client) return;
 
   try {
@@ -166,7 +166,7 @@ export async function trackReasoningQuality(data: {
   userFeedback?: 'helpful' | 'not_helpful';
   completionRate?: number;
 }): Promise<void> {
-  const client = getOpikClient();
+  const client = await getOpikClient();
   if (!client) return;
 
   try {
@@ -236,7 +236,7 @@ export async function exportOpikData(
   startDate: Date,
   endDate: Date
 ): Promise<any[]> {
-  const client = getOpikClient();
+  const client = await getOpikClient();
   if (!client) {
     console.warn('Opik client not available for export');
     return [];

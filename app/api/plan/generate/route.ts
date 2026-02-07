@@ -98,7 +98,13 @@ export async function POST(request: NextRequest) {
       });
 
       if (existingPlan) {
-        tasks = existingPlan.tasks.map((t) => ({
+        tasks = existingPlan.tasks.map((t: {
+          id: string;
+          title: string;
+          description: string | null;
+          priority: number;
+          estimatedMinutes: number;
+        }) => ({
           id: t.id,
           title: t.title,
           description: t.description || undefined,
@@ -117,7 +123,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Convert tasks to auto-scheduler format
-    const tasksToSchedule: TaskToSchedule[] = tasks.map((t) => ({
+    const tasksToSchedule: TaskToSchedule[] = tasks.map((t: {
+      id: string;
+      title: string;
+      description?: string;
+      priority: number;
+      estimatedMinutes: number;
+      dueDate?: Date;
+      project?: string;
+    }) => ({
       id: t.id,
       title: t.title,
       description: t.description,
@@ -185,7 +199,14 @@ export async function POST(request: NextRequest) {
     let calendarSyncResult;
     if (syncToCalendar) {
       try {
-        const taskSchedules = plan.tasks.map((t) => ({
+        const taskSchedules = plan.tasks.map((t: {
+          id: string;
+          title: string;
+          description: string | null;
+          scheduledStart: Date | null;
+          scheduledEnd: Date | null;
+          priority: number;
+        }) => ({
           taskId: t.id,
           title: t.title,
           description: t.description || undefined,
@@ -218,7 +239,19 @@ export async function POST(request: NextRequest) {
           capacityScore: plan.capacityScore,
           mode: plan.mode,
           reasoning: plan.geminiReasoning,
-          tasks: plan.tasks.map((t) => ({
+          tasks: plan.tasks.map((t: {
+            id: string;
+            title: string;
+            description: string | null;
+            priority: number;
+            estimatedMinutes: number;
+            scheduledStart: Date | null;
+            scheduledEnd: Date | null;
+            completed: boolean;
+            skipRisk: string | null;
+            skipRiskPercentage: number | null;
+            momentumState: string | null;
+          }) => ({
             id: t.id,
             title: t.title,
             description: t.description,

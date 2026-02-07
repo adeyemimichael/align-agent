@@ -45,7 +45,14 @@ export async function GET(request: NextRequest) {
     }
 
     // Convert to CheckInHistory format
-    const checkInHistory: CheckInHistory[] = history.map((h) => ({
+    const checkInHistory: CheckInHistory[] = history.map((h: {
+      date: Date;
+      capacityScore: number;
+      energy: number;
+      sleep: number;
+      stress: number;
+      mood: string;
+    }) => ({
       date: h.date,
       capacityScore: h.capacityScore,
       energy: h.energy,

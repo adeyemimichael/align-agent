@@ -34,11 +34,11 @@ export async function GET(request: NextRequest) {
 
     // Calculate statistics
     const totalTasks = plansWithTasks.reduce(
-      (sum, plan) => sum + plan.tasks.length,
+      (sum: number, plan: { tasks: unknown[] }) => sum + plan.tasks.length,
       0
     );
     const completedTasks = plansWithTasks.reduce(
-      (sum, plan) => sum + plan.tasks.filter((t) => t.completed).length,
+      (sum: number, plan: { tasks: { completed: boolean }[] }) => sum + plan.tasks.filter((t) => t.completed).length,
       0
     );
     const avgCompletionRate =
@@ -46,13 +46,13 @@ export async function GET(request: NextRequest) {
 
     const avgCapacity =
       plansWithTasks.length > 0
-        ? plansWithTasks.reduce((sum, plan) => sum + plan.capacityScore, 0) /
+        ? plansWithTasks.reduce((sum: number, plan: { capacityScore: number }) => sum + plan.capacityScore, 0) /
           plansWithTasks.length
         : 0;
 
     // Mode distribution
     const modeDistribution = plansWithTasks.reduce(
-      (acc, plan) => {
+      (acc: Record<string, number>, plan: { mode: string }) => {
         acc[plan.mode] = (acc[plan.mode] || 0) + 1;
         return acc;
       },

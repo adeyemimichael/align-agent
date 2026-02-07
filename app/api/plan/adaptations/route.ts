@@ -60,14 +60,14 @@ export async function GET(request: NextRequest) {
 
     // Filter to only plans that were actually rescheduled
     const adaptations = plans
-      .filter((plan) => {
+      .filter((plan: { geminiReasoning: string }) => {
         // Check if geminiReasoning contains reschedule marker
         return (
           plan.geminiReasoning &&
           plan.geminiReasoning.includes('[Rescheduled at')
         );
       })
-      .map((plan) => {
+      .map((plan: { id: string; date: Date; geminiReasoning: string; capacityScore: number; mode: string; tasks: { completed: boolean }[] }) => {
         // Extract reschedule time from reasoning
         const rescheduleMatch = plan.geminiReasoning.match(
           /\[Rescheduled at (.+?)\]/
@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
           rescheduleTime,
           reasoning: plan.geminiReasoning,
           tasksCount: plan.tasks.length,
-          completedCount: plan.tasks.filter((t) => t.completed).length,
+          completedCount: plan.tasks.filter((t: { completed: boolean }) => t.completed).length,
         };
       });
 

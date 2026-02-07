@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { updateCalendarEvent } from '@/lib/calendar-sync';
 import { recordTaskCompletion } from '@/lib/time-tracking';
+import { trackCapacityAccuracy } from '@/lib/opik';
 
 // PATCH /api/plan/[id] - Update a plan (user adjustments)
 export async function PATCH(
@@ -100,7 +101,7 @@ export async function PATCH(
 
     // Track capacity accuracy in Opik
     if (updatedPlan) {
-      const completedTasks = updatedPlan.tasks.filter((t) => t.completed).length;
+      const completedTasks = updatedPlan.tasks.filter((t: { completed: boolean }) => t.completed).length;
       const totalTasks = updatedPlan.tasks.length;
       const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
@@ -122,7 +123,19 @@ export async function PATCH(
           capacityScore: updatedPlan!.capacityScore,
           mode: updatedPlan!.mode,
           reasoning: updatedPlan!.geminiReasoning,
-          tasks: updatedPlan!.tasks.map((t) => ({
+          tasks: updatedPlan!.tasks.map((t: {
+            id: string;
+            title: string;
+            description: string | null;
+            priority: number;
+            estimatedMinutes: number;
+            scheduledStart: Date | null;
+            scheduledEnd: Date | null;
+            completed: boolean;
+            completedAt: Date | null;
+            actualMinutes: number | null;
+            goalId: string | null;
+          }) => ({
             id: t.id,
             title: t.title,
             description: t.description,

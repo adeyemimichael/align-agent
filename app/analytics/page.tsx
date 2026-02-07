@@ -44,19 +44,19 @@ export default async function AnalyticsPage() {
 
   // Calculate statistics
   const avgCapacity = history.length > 0
-    ? Math.round(history.reduce((sum, h) => sum + h.capacityScore, 0) / history.length)
+    ? Math.round(history.reduce((sum: number, h: { capacityScore: number }) => sum + h.capacityScore, 0) / history.length)
     : 0;
 
   const avgEnergy = history.length > 0
-    ? (history.reduce((sum, h) => sum + h.energy, 0) / history.length).toFixed(1)
+    ? (history.reduce((sum: number, h: { energy: number }) => sum + h.energy, 0) / history.length).toFixed(1)
     : '0';
 
   const avgSleep = history.length > 0
-    ? (history.reduce((sum, h) => sum + h.sleep, 0) / history.length).toFixed(1)
+    ? (history.reduce((sum: number, h: { sleep: number }) => sum + h.sleep, 0) / history.length).toFixed(1)
     : '0';
 
   const avgStress = history.length > 0
-    ? (history.reduce((sum, h) => sum + h.stress, 0) / history.length).toFixed(1)
+    ? (history.reduce((sum: number, h: { stress: number }) => sum + h.stress, 0) / history.length).toFixed(1)
     : '0';
 
   // Determine trend
@@ -64,11 +64,11 @@ export default async function AnalyticsPage() {
   const olderHistory = history.slice(7, 14);
   
   const recentAvg = recentHistory.length > 0
-    ? recentHistory.reduce((sum, h) => sum + h.capacityScore, 0) / recentHistory.length
+    ? recentHistory.reduce((sum: number, h: { capacityScore: number }) => sum + h.capacityScore, 0) / recentHistory.length
     : 0;
   
   const olderAvg = olderHistory.length > 0
-    ? olderHistory.reduce((sum, h) => sum + h.capacityScore, 0) / olderHistory.length
+    ? olderHistory.reduce((sum: number, h: { capacityScore: number }) => sum + h.capacityScore, 0) / olderHistory.length
     : 0;
 
   let trend: 'improving' | 'declining' | 'stable' = 'stable';
