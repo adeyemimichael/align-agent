@@ -1,5 +1,3 @@
-import { auth } from "@/lib/auth";
-import { redirect } from "next/navigation";
 import LoginForm from "@/components/LoginForm";
 
 export const runtime = 'nodejs';
@@ -9,13 +7,10 @@ export default async function LoginPage({
 }: {
   searchParams: Promise<{ callbackUrl?: string }>;
 }) {
-  const session = await auth();
   const params = await searchParams;
 
-  // Redirect to dashboard if already authenticated
-  if (session) {
-    redirect(params.callbackUrl || "/dashboard");
-  }
+  // Note: Session check removed to prevent database connection errors
+  // If user is already logged in, they can navigate to dashboard manually
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-emerald-50">
