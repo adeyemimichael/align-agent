@@ -1,16 +1,10 @@
 import Link from "next/link";
-import { auth } from "@/lib/auth";
-import { redirect } from "next/navigation";
 
 export const runtime = 'nodejs';
 
 export default async function Home() {
-  const session = await auth();
-
-  //Redirect to dashboard if already authenticated
-  if (session) {
-    redirect("/dashboard");
-  }
+  // Note: Session check removed to prevent database connection on landing page
+  // Users will be redirected from dashboard if not authenticated
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50">
