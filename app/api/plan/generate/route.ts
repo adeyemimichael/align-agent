@@ -127,52 +127,13 @@ export async function POST(request: NextRequest) {
       project: t.project,
     }));
 
-    // Use AI-driven auto-scheduler with graceful degradation
-    const autoScheduleResult = await withGracefulDegradation(
-      // Primary: AI-powered scheduling
-      async () => {
-        return await autoScheduleTasks(
-          user.id,
-          tasksToSchedule,
-          checkIn.capacityScore,
-          checkIn.mode as 'recovery' | 'balanced' | 'deep_work',
-          planDate
-        );
-      },
-      // Fallback: Simple rule-based scheduling
-      async () => {
-        console.warn('Using fallback scheduling due to AI service error');
-        // Simple fallback: sort by priority and due date
-        const sortedTasks = [...tasksToSchedule].sort((a, b) => {
-          if (a.priority !== b.priority) return a.priority - b.priority;
-          if (a.dueDate && b.dueDate) return a.dueDate.getTime() - b.dueDate.getTime();
-          if (a.dueDate) return -1;
-          if (b.dueDate) return 1;
-          return 0;
-        });
-
-        const scheduledTasks = sortedTasks.map((task, index) => ({
-          taskId: task.id,
-          title: task.title,
-          adjustedMinutes: task.estimatedMinutes,
-          originalMinutes: task.estimatedMinutes,
-          scheduledStart: new Date(planDate.getTime() + (9 * 60 + index * 60) * 60000),
-          scheduledEnd: new Date(planDate.getTime() + (9 * 60 + (index + 1) * 60) * 60000),
-          reason: 'Fallback scheduling (AI unavailable)',
-        }));
-
-        return {
-          scheduledTasks,
-          skippedTasks: [],
-          totalScheduledMinutes: scheduledTasks.reduce((sum, t) => sum + t.adjustedMinutes, 0),
-          availableMinutes: 480,
-          reasoning: 'Using simplified scheduling. AI features will be restored shortly.',
-        };
-      },
-      {
-        operation: 'AI scheduling',
-        shouldFallback: (error) => error instanceof AIServiceError,
-      }
+    // Use AI-driven auto-scheduler - NO FALLBACK, AI is required
+    const autoScheduleResult = await autoScheduleTasks(
+      user.id,
+      tasksToSchedule,
+      checkIn.capacityScore,
+      checkIn.mode as 'recovery' | 'balanced' | 'deep_work',
+      planDate
     );
 
     // AI reasoning is already included in autoScheduleResult

@@ -46,7 +46,7 @@ export async function PATCH(
     const timeTrackingResults = [];
     if (tasks && Array.isArray(tasks)) {
       for (const taskUpdate of tasks) {
-        const { id, scheduledStart, scheduledEnd, completed } = taskUpdate;
+        const { id, scheduledStart, scheduledEnd, completed, goalId } = taskUpdate;
 
         if (!id) continue;
 
@@ -63,6 +63,10 @@ export async function PATCH(
               timeTrackingResults.push(timeTrackingResult.timeTracking);
             }
           }
+        }
+        // Support updating goalId (can be null to unlink)
+        if (goalId !== undefined) {
+          updateData.goalId = goalId || null;
         }
 
         await prisma.planTask.update({

@@ -94,25 +94,35 @@ export default function NotificationScheduler({
         // Generate and send notification
         const message = generateCheckInReminderMessage(goals);
         
-        // Try browser notification first
-        const browserSent = await sendNotification(message.title, message.body, {
-          type: 'check_in_reminder',
-          url: '/checkin',
-        });
+        let sent = false;
 
-        // If browser notification failed and email is enabled, send email
-        if (!browserSent && preferences.channels?.email) {
-          await fetch('/api/notifications/send-email', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              type: 'check_in_reminder',
-              goalTitle: goals.length > 0 ? goals[0].title : undefined,
-            }),
+        // Send to BROWSER if enabled
+        if (preferences.channels?.browser) {
+          const browserSent = await sendNotification(message.title, message.body, {
+            type: 'check_in_reminder',
+            url: '/checkin',
           });
+          if (browserSent) sent = true;
         }
 
-        if (browserSent) {
+        // Send to EMAIL if enabled (parallel, not fallback)
+        if (preferences.channels?.email) {
+          try {
+            await fetch('/api/notifications/send-email', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                type: 'check_in_reminder',
+                goalTitle: goals.length > 0 ? goals[0].title : undefined,
+              }),
+            });
+            sent = true;
+          } catch (error) {
+            console.error('Email notification failed:', error);
+          }
+        }
+
+        if (sent) {
           lastCheckInReminderRef.current = now;
         }
       }
@@ -156,28 +166,38 @@ export default function NotificationScheduler({
             preferences.tone
           );
 
-          // Try browser notification first
-          const browserSent = await sendNotification(message.title, message.body, {
-            type: 'task_reminder',
-            taskId: task.id,
-            url: '/plan',
-          });
+          let sent = false;
 
-          // If browser notification failed and email is enabled, send email
-          if (!browserSent && preferences.channels?.email) {
-            await fetch('/api/notifications/send-email', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                type: 'task_reminder',
-                taskTitle: task.title,
-                estimatedMinutes: task.estimatedMinutes,
-                tone: preferences.tone,
-              }),
+          // Send to BROWSER if enabled
+          if (preferences.channels?.browser) {
+            const browserSent = await sendNotification(message.title, message.body, {
+              type: 'task_reminder',
+              taskId: task.id,
+              url: '/plan',
             });
+            if (browserSent) sent = true;
           }
 
-          if (browserSent) {
+          // Send to EMAIL if enabled (parallel, not fallback)
+          if (preferences.channels?.email) {
+            try {
+              await fetch('/api/notifications/send-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  type: 'task_reminder',
+                  taskTitle: task.title,
+                  estimatedMinutes: task.estimatedMinutes,
+                  tone: preferences.tone,
+                }),
+              });
+              sent = true;
+            } catch (error) {
+              console.error('Email notification failed:', error);
+            }
+          }
+
+          if (sent) {
             sentTaskRemindersRef.current.add(taskId);
           }
         }
