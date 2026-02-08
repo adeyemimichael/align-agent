@@ -2,17 +2,19 @@
 
 > An intelligent productivity system that adapts to your real capacity, not just your calendar.
 
-[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://your-app-url.vercel.app)
+[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://align-adeyemimichaels-projects.vercel.app)
 [![Video Demo](https://img.shields.io/badge/video-watch-red)](https://your-demo-video-url)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Discord](https://img.shields.io/badge/discord-adeyemi12345-7289da)](https://discord.com)
 
 Align AI Agent is an AI-powered productivity assistant that plans your day based on your actual capacity—energy levels, sleep quality, stress, and mood—rather than treating you like a constant-output machine. It learns from your patterns and helps you work with your natural rhythms, not against them.
 
 ## 🔗 Links
 
-- **Live App**: [https://your-app-url.vercel.app](https://your-app-url.vercel.app)
+- **Live App**: [https://align-adeyemimichaels-projects.vercel.app](https://align-adeyemimichaels-projects.vercel.app)
 - **Demo Video**: [Watch on YouTube](https://your-demo-video-url)
 - **Documentation**: [Full Docs](./DEPLOYMENT.md)
+- **Discord**: adeyemi12345
 
 ## ✨ Features
 
@@ -167,8 +169,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
         <sub><b>Adeyemi Michael</b></sub>
       </a>
       <br />
-      <a href="https://twitter.com/your-twitter" title="Twitter">🐦</a>
-      <a href="https://linkedin.com/in/your-linkedin" title="LinkedIn">💼</a>
+      <a href="https://discord.com" title="Discord">adeyemi12345</a>
     </td>
     <!-- Add more contributors here -->
   </tr>
@@ -176,8 +177,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 📱 Connect With Us
 
-- **Twitter**: [@your-twitter-handle](https://twitter.com/your-twitter-handle)
-- **LinkedIn**: [Your Name](https://linkedin.com/in/your-linkedin)
+- **Discord**: adeyemi12345
 - **GitHub**: [@adeyemimichael](https://github.com/adeyemimichael)
 - **Email**: ayobami732000@gmail.com
 

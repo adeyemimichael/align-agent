@@ -58,6 +58,7 @@ export default function PlanPage() {
   const [error, setError] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [syncToCalendar, setSyncToCalendar] = useState(false);
 
   useEffect(() => {
     fetchCurrentPlan();
@@ -123,7 +124,7 @@ export default function PlanPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          syncToCalendar: false, // Can be made configurable
+          syncToCalendar, // Use the state value
         }),
       });
 
@@ -134,6 +135,15 @@ export default function PlanPage() {
 
       const data = await response.json();
       setPlan(data.plan);
+      
+      // Show calendar sync result if applicable
+      if (syncToCalendar && data.calendarSync) {
+        if (data.calendarSync.success) {
+          alert(`✅ Plan generated and ${data.calendarSync.createdEvents} events added to Google Calendar!`);
+        } else {
+          alert(`⚠️ Plan generated but calendar sync had issues: ${data.calendarSync.errors?.join(', ')}`);
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate plan');
     } finally {
@@ -340,6 +350,18 @@ export default function PlanPage() {
             <p className="text-gray-600 mb-8 max-w-md mx-auto">
               Our AI will analyze your capacity, goals, and tasks to create a personalized schedule that works for you.
             </p>
+            <div className="mb-6 flex items-center justify-center gap-3">
+              <input
+                type="checkbox"
+                id="syncToCalendar"
+                checked={syncToCalendar}
+                onChange={(e) => setSyncToCalendar(e.target.checked)}
+                className="w-5 h-5 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
+              />
+              <label htmlFor="syncToCalendar" className="text-gray-700 font-medium cursor-pointer">
+                📅 Sync to Google Calendar
+              </label>
+            </div>
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -351,6 +373,7 @@ export default function PlanPage() {
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
                   Generating Your Plan...
+              {syncToCalendar && ' & Syncing to Calendar...'}
                 </>
               ) : (
                 <>
@@ -481,15 +504,25 @@ export default function PlanPage() {
                       <div className="flex-1">
                         <div className="flex items-start justify-between gap-4">
                           <div>
-                            <h3
-                              className={`font-medium ${
-                                task.completed
-                                  ? 'text-gray-500 line-through'
-                                  : 'text-gray-900'
-                              }`}
-                            >
-                              {task.title}
-                            </h3>
+                            <div className="flex items-center gap-2">
+                              <h3
+                                className={`font-medium ${
+                                  task.completed
+                                    ? 'text-gray-500 line-through'
+                                    : 'text-gray-900'
+                                }`}
+                              >
+                                {task.title}
+                              </h3>
+                              {task.externalId && (
+                                <span className="px-2 py-0.5 bg-red-50 text-red-600 text-xs font-semibold rounded border border-red-200 flex items-center gap-1" title="Synced from Todoist">
+                                  <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M21.5 7.5l-9 9-5-5" stroke="currentColor" strokeWidth="2" fill="none"/>
+                                  </svg>
+                                  Todoist
+                                </span>
+                              )}
+                            </div>
                             {task.description && (
                               <p className="text-sm text-gray-600 mt-1">
                                 {task.description}

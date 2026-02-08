@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import DashboardLayout from '@/components/DashboardLayout';
 import GoalForm from '@/components/GoalForm';
 import LoadingSpinner from '@/components/LoadingSpinner';
-import { Target, Plus, Briefcase, Heart, Star, Calendar, Edit2, Trash2, Loader2, AlertCircle } from 'lucide-react';
+import { Target, Plus, Briefcase, Heart, Star, Calendar, Edit2, Trash2, Loader2, AlertCircle, Clock } from 'lucide-react';
 
 interface Goal {
   id: string;
@@ -25,16 +25,31 @@ interface Goal {
   }>;
 }
 
+interface CalendarEvent {
+  id: string;
+  summary: string;
+  start: {
+    dateTime: string;
+  };
+  end: {
+    dateTime: string;
+  };
+  htmlLink: string;
+}
+
 export default function GoalsPage() {
   const router = useRouter();
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadingCalendar, setLoadingCalendar] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchGoals();
+    fetchCalendarEvents();
   }, []);
 
   const fetchGoals = async () => {
@@ -49,6 +64,35 @@ export default function GoalsPage() {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchCalendarEvents = async () => {
+    try {
+      setLoadingCalendar(true);
+      // Get today's events from Google Calendar
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      const response = await fetch(
+        `/api/integrations/google-calendar/events?timeMin=${today.toISOString()}&timeMax=${tomorrow.toISOString()}`
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        setCalendarEvents(data.events || []);
+      } else {
+        // Calendar not connected or error - silently fail
+        setCalendarEvents([]);
+      }
+    } catch (err) {
+      // Silently fail - calendar is optional
+      console.error('Failed to fetch calendar events:', err);
+      setCalendarEvents([]);
+    } finally {
+      setLoadingCalendar(false);
     }
   };
 
@@ -236,6 +280,83 @@ export default function GoalsPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+        {/* Calendar Connection Status */}
+        <div className="mb-8">
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Calendar className="w-6 h-6 text-blue-600" />
+                <div>
+                  <h3 className="font-semibold text-gray-900">Google Calendar</h3>
+                  <p className="text-sm text-gray-600">
+                    {loadingCalendar ? (
+                      'Loading events...'
+                    ) : calendarEvents.length > 0 ? (
+                      `${calendarEvents.length} event${calendarEvents.length !== 1 ? 's' : ''} today`
+                    ) : (
+                      'No events today or not connected'
+                    )}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => router.push('/integrations')}
+                className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                {calendarEvents.length > 0 ? 'Manage' : 'Connect Calendar'}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Calendar Events Section */}
+        {calendarEvents.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <Calendar className="w-6 h-6 text-emerald-600" />
+              Today's Calendar Events
+            </h2>
+            <div className="space-y-3">
+              {calendarEvents.map((event) => (
+                <div
+                  key={event.id}
+                  className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-4 hover:shadow-md transition-all"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900 mb-1">
+                        {event.summary}
+                      </h3>
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Clock className="w-4 h-4" />
+                        <span>
+                          {new Date(event.start.dateTime).toLocaleTimeString('en-US', {
+                            hour: 'numeric',
+                            minute: '2-digit',
+                          })}
+                          {' - '}
+                          {new Date(event.end.dateTime).toLocaleTimeString('en-US', {
+                            hour: 'numeric',
+                            minute: '2-digit',
+                          })}
+                        </span>
+                      </div>
+                    </div>
+                    <a
+                      href={event.htmlLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded hover:bg-blue-200 transition-colors"
+                    >
+                      View in Calendar
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Goals List */}
         {goals.length === 0 ? (

@@ -17,10 +17,16 @@ interface User {
   checkIns: Array<{ capacityScore: number }>;
 }
 
+interface AIStatus {
+  gemini: { configured: boolean; status: string };
+  opik: { configured: boolean; status: string };
+}
+
 export default function IntegrationsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
+  const [aiStatus, setAiStatus] = useState<AIStatus | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -31,6 +37,7 @@ export default function IntegrationsPage() {
 
     if (status === 'authenticated') {
       fetchUserData();
+      fetchAIStatus();
     }
   }, [status, router]);
 
@@ -45,6 +52,18 @@ export default function IntegrationsPage() {
       console.error('Failed to fetch user data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAIStatus = async () => {
+    try {
+      const response = await fetch('/api/ai/status');
+      if (response.ok) {
+        const data = await response.json();
+        setAiStatus(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch AI status:', error);
     }
   };
 
@@ -109,7 +128,7 @@ export default function IntegrationsPage() {
       color: 'text-purple-600',
       bgColor: 'bg-purple-50',
       borderColor: 'border-purple-200',
-      connected: !!process.env.GEMINI_API_KEY,
+      connected: aiStatus?.gemini?.configured ?? false,
       features: [
         'Intelligent task ordering',
         'Capacity-aware scheduling',
@@ -126,7 +145,7 @@ export default function IntegrationsPage() {
       color: 'text-orange-600',
       bgColor: 'bg-orange-50',
       borderColor: 'border-orange-200',
-      connected: !!process.env.OPIK_API_KEY,
+      connected: aiStatus?.opik?.configured ?? false,
       features: [
         'AI decision logging',
         'Performance metrics',
