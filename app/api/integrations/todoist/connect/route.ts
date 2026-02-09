@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
     authUrl.searchParams.set('client_id', clientId);
     authUrl.searchParams.set('scope', scope);
     authUrl.searchParams.set('state', state);
+    authUrl.searchParams.set('redirect_uri', redirectUri);
 
     // Redirect to Todoist OAuth page
     return NextResponse.redirect(authUrl.toString());
